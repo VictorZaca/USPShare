@@ -1,334 +1,265 @@
-Projects Template
-=====================
-## Table of Contents
-1. [Repository Name](#repo_name)
-2. [Repository files structure](#repo_file_structure)
-3. [Recommendations for Improving Code Quality!](#recommendations_improving_code_quality)
-    1. [Basic Recommendations](#basic_recommendations)
-    2. [Flake8](#flake8)
-    3. [isort](#isort)
-    4. [Additional tips](#additional_tips)
-4. [Avoiding Unnecessary Complexity in Your Code](#unnecessary_complexity)
-4. [Final Considerations](#final_considerations)
-5. [Contact](#contact)
+# Guia Passo a Passo: Desenvolvimento de Site para Alunos da USP
 
+Este guia detalhado aborda o desenvolvimento de um site para alunos da USP, onde os usuários poderão se cadastrar, fazer login e enviar documentos (provas, listas, exercícios, etc.) de anos anteriores. O guia cobre desde o planejamento até a implantação, com orientações para implementação do backend em Kotlin ou Go e o uso do MySQL com 4 tabelas.
 
-<br><br>
+## 1. Planejamento e Levantamento de Requisitos
 
-<a name="repo_name"></a>
-## Repository Name
+### Defina a ideia principal:  
 
-Choose a repository name that clearly reflects the project's purpose. Here are some examples:
-- efficient-language-models
-- causal-reasoning-with-data
-- user-centered-LLMs-evaluation
+- Usuários se cadastrando e autenticando no site.  
+- Upload de documentos (provas, listas, exercícios) para acesso posterior.  
+- Visualização e pesquisa dos documentos por critérios (ex: disciplina, ano, tipo de prova).  
+- (Opcional) Possibilidade de comentar ou avaliar os documentos.
 
-If your project encompasses multiple repositories, include a concise descriptor for each one. For example:
-- efficient-language-models-summarization-task
-- efficient-language-models-dataset-constructor
+### Funcionalidades Básicas:  
 
-This approach ensures that each repository name is both descriptive and easily identifiable, facilitating better organization and navigation.
+- Cadastro de novo usuário  
+- Login e logout  
+- Upload (armazenamento local ou em nuvem) dos arquivos  
+- Listagem, filtragem e pesquisa dos documentos  
+- Exibição dos detalhes dos arquivos (título, descrição, data, autor, disciplina, etc.)
 
-> **_NOTE:_**  Always use lowercase letters (unless it is an abbreviation of a name or term, such as "LLM") and separate words with hyphens (-).
+### Definição dos requisitos do projeto:  
 
-<br><br>
+- Backend escrito em Kotlin ou Go  
+- Banco de dados MySQL com 4 tabelas  
+- (Opcional) Interface web básica para interação com os usuários utilizando HTML, CSS e, se necessário, JavaScript ou framework como Bootstrap para facilitar o design.
 
-<a name="repo_file_structure"></a>
-## Repository files structure 
+## 2. Definição e Estruturação do Banco de Dados MySQL
 
-A well-organized repository structure enhances readability and maintainability. Below is a recommended file structure:
+Crie um novo banco (por exemplo, "usp_documents") e planeje 4 tabelas. Sugestão de modelagem:
 
-    .
-    ├── data/                 # Contains links to datasets. If the repository is or will be public, you can upload the datasets directly here
-    ├── images/               # Contains images (avoid uploading too many images to private repositories)
-    ├── scripts/              # Python or other language scripts (e.g., shell scripts for running experiments)
-    ├── src/                  # Project source code
-    ├── utils/                # Contains common code that is reusable and independent of the application's core logic
-    ├── .gitignore            # File extensions or patterns to be ignored by Git
-    ├── LICENSE               # Repository license
-    ├── main.py               # Python script that contains an easy-to-run code example of the project
-    ├── README.md             # Project overview. Should include a simple tutorial of how to use the main.py file
-    └── requirements.txt      # Dependencies (preferably use pip instead of conda environments)
+### Tabela "usuarios":
 
+- id (INT, PK, auto incremento)  
+- nome (VARCHAR)  
+- email (VARCHAR, único)  
+- hash_senha (VARCHAR)  
+- data_criacao (DATETIME)
 
-**Best Practices for File Extensions:**
-- **Markdown** (`.md`): Use for documentation, as it is the default format on GitHub.
-- **Text** (`.txt`): Use for listing requirements or plain text notes.
-- **PDF** (`.pdf`): Preferable for reports or papers over Microsoft Word format (`.docx`) to ensure consistency and accessibility.
+### Tabela "disciplinas":  
 
-<br><br>
+- id (INT, PK, auto incremento)  
+- nome (VARCHAR)  
+- codigo (VARCHAR) – opcional para identificar a disciplina  
+- descricao (TEXT) – opcional
 
+### Tabela "documentos":  
 
-<a name="recommendations_improving_code_quality"></a>
-## Recommendations for Improving Code Quality! 
+- id (INT, PK, auto incremento)  
+- titulo (VARCHAR)  
+- descricao (TEXT)  
+- tipo (ENUM ou VARCHAR) – ex.: "prova", "lista", "exercício"  
+- ano (INT) – para indicar o ano do exame  
+- usuario_id (INT) – chave estrangeira referenciando "usuarios"  
+- disciplina_id (INT) – chave estrangeira referenciando "disciplinas"  
+- data_upload (DATETIME)  
+- caminho_arquivo (VARCHAR) – local onde o arquivo está armazenado
 
-Imagine opening a scientific paper that's left-aligned like the image below (left). It can be frustrating and hard to read, prompting you to put the paper down immediately. Compare this to the same text justified on both sides (right).
+### Tabela "comentarios":  
 
-![Left-aligned vs justified text](/images/left-aligned-vs-justified.png)
+- id (INT, PK, auto incremento)  
+- documento_id (INT) – chave estrangeira referenciando "documentos"  
+- usuario_id (INT) – chave estrangeira referenciando "usuarios"  
+- comentario (TEXT)  
+- data_comentario (DATETIME)
 
-Similarly, poorly formatted or written code can be just as, if not more, difficult to read. This can cause readers to lose focus quickly and damage your reputation as a developer. Consider the two code examples below and choose which one you find easier to read. You'll likely prefer the second one! 😉
+### Ferramentas Úteis:  
+- MySQL Workbench ou DBeaver para modelagem e administração do banco.
+- Scripts SQL para criar as tabelas e definir as chaves estrangeiras.
 
-```python
-def process_order(order):
-    if order['quantity'] > 100 and order['price'] > 500 and order['status'] == 'confirmed' and order['customer_type'] == 'premium' and order['delivery_date'] > '2024-01-01':
-        print("Processing high-priority premium order")
-    else:
-        print("Processing regular order")
+## 3. Desenvolvimento do Backend
+
+### A. Usando Kotlin
+
+#### Frameworks Sugeridos:  
+
+- Spring Boot – Possui muita documentação e facilita a criação de APIs REST.  
+- Ktor – Um framework mais leve e moderno para aplicações web.
+
+#### Passos Básicos com Spring Boot (exemplo):  
+
+1. Configure o ambiente de desenvolvimento (instale o JDK, uma IDE como IntelliJ IDEA e o Maven/Gradle).  
+2. Crie um novo projeto Spring Boot com dependências para Web, JPA (para ORM) e MySQL Driver.  
+3. Configure o arquivo de propriedades (application.properties ou application.yml) com as credenciais do banco MySQL.  
+4. Modele suas entidades (classes) que mapeiam para as tabelas "usuarios", "disciplinas", "documentos" e "comentarios".  
+5. Crie repositórios (interfaces que estendem JpaRepository) para acesso aos dados.
+6. Desenvolva controllers REST para expor endpoints, como:
+
+   - POST /usuarios – para cadastro
+   - POST /login – para autenticação  
+   - POST /documentos – para upload  
+   - GET /documentos – para listagem e pesquisa  
+   - (Opcional) POST /comentarios – para enviar comentários
+
+7. Inclua tratamentos de exceção, segurança (por exemplo, JWT ou OAuth2) e verificação de uploads (tamanho e tipo do arquivo).
+
+### B. Usando Go
+
+#### Frameworks Sugeridos:  
+
+- Gin ou Echo – São frameworks robustos e de alta performance para construir APIs RESTful.
+
+#### Passos Básicos com Gin (exemplo):  
+
+1. Instale o Go e configure o ambiente de desenvolvimento (use VS Code, GoLand ou o editor de sua preferência).  
+2. Crie um novo projeto Go e importe o framework Gin.  
+3. Configure uma conexão com o MySQL utilizando um driver (como go-sql-driver/mysql) ou um ORM (por exemplo, GORM).  
+4. Modele suas estruturas (structs) que mapeiam para as tabelas do banco.
+5. Implemente funções para gerenciar os endpoints REST:
+
+   - POST /usuarios para cadastro
+   - POST /login para autenticação  
+   - POST /documentos para upload  
+   - GET /documentos para listagem e pesquisa  
+   - (Opcional) POST /comentarios para comentários  
+
+6. Trabalhe com validações, tratamento de erros, autenticação (por exemplo, com tokens JWT) e segurança para uploads (limite de tamanho e tipos de arquivo).
+
+### Dicas Gerais para o Backend:  
+- Utilize uma arquitetura limpa, separando as camadas de controladores (controllers), serviços (services) e acesso a dados (repositories/DAOs).  
+- Use funções/métodos para reutilização de código, principalmente na conexão e manipulação do banco de dados.  
+- Teste suas rotas com ferramentas como Postman ou cURL.  
+- Mantenha a documentação da API atualizada (pode usar Swagger/OpenAPI).
+
+## 4. Desenvolvimento do Frontend
+
+### Opções:  
+
+- Desenvolver páginas em HTML, CSS e JavaScript para consumo dos endpoints REST do backend.  
+- Usar frameworks/metodologias como Bootstrap para facilitar o design responsivo.  
+- Utilizar AJAX/fetch para interações assíncronas (por exemplo, para enviar dados de login ou upload sem recarregar a página).
+
+### Funcionalidades de Interface:  
+
+- Página inicial com informações sobre o site e acesso às funcionalidades.  
+- Tela de cadastro e login.  
+- Página para upload de documentos (formulário com campos para título, descrição, seleção de disciplina, tipo e ano).  
+- Página de listagem dos documentos com filtros e possibilidade de pesquisa.  
+- (Opcional) Página de visualização com comentários.
+
+## 5. A Integração Com o Banco de Dados
+
+### Configuração:  
+
+- Certifique-se que o MySQL esteja instalado e configurado.  
+- Crie o banco de dados e as tabelas conforme o script SQL que você elaborará (baseado na modelagem sugerida).
+
+### Exemplo de Script SQL para criação das tabelas:
+
+```sql
+-- Tabela de usuários
+CREATE TABLE usuarios (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  nome VARCHAR(100) NOT NULL,
+  email VARCHAR(100) NOT NULL UNIQUE,
+  hash_senha VARCHAR(255) NOT NULL,
+  data_criacao DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Tabela de disciplinas
+CREATE TABLE disciplinas (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  nome VARCHAR(100) NOT NULL,
+  codigo VARCHAR(20),
+  descricao TEXT
+);
+
+-- Tabela de documentos
+CREATE TABLE documentos (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  titulo VARCHAR(150) NOT NULL,
+  descricao TEXT,
+  tipo VARCHAR(50),
+  ano INT,
+  usuario_id INT,
+  disciplina_id INT,
+  data_upload DATETIME DEFAULT CURRENT_TIMESTAMP,
+  caminho_arquivo VARCHAR(255),
+  FOREIGN KEY (usuario_id) REFERENCES usuarios(id),
+  FOREIGN KEY (disciplina_id) REFERENCES disciplinas(id)
+);
+
+-- Tabela de comentários
+CREATE TABLE comentarios (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  documento_id INT,
+  usuario_id INT,
+  comentario TEXT,
+  data_comentario DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (documento_id) REFERENCES documentos(id),
+  FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
+);
 ```
 
-```python
-def process_order(order):
-    if (
-        order['quantity'] > 100 
-        and order['price'] > 500 
-        and order['status'] == 'confirmed'
-        and order['customer_type'] == 'premium'
-        and order['delivery_date'] > '2024-01-01'
-    ):
-        print("Processing high-priority premium order")
-    else:
-        print("Processing regular order")
-```
+### Observações:  
+- Caso opte por outra abordagem na modelagem, ajuste as tabelas e relacionamentos conforme necessário.  
+- Considere índices nas colunas que serão usadas para filtragem e pesquisa (como "ano", "tipo", "disciplina_id").
 
-Improving your code quality may initially seem unnecessary or tedious, but over time you'll discover that these practices help you write more organized, efficient, and maintainable code. Remember, organization is key in all aspects of life—and your code is no exception!
 
+## 6. Testes, Segurança e Validação
 
-<a name="basic_recommendations"></a>
-### **Here are some recommendations to enhance your code quality:** 
+### Testes Unitários e de Integração:  
 
-**1. Consistent Formatting:**
- - Indentation: Use consistent indentation (e.g., 4 spaces) to improve readability.
- - Line Length: Keep lines within a reasonable length (e.g., 99 characters) to make the code easier to read and review.
+- Implemente testes para as funções críticas do backend (como autenticação, upload e acesso ao banco de dados).  
+- Utilize ferramentas próprias da linguagem escolhida (JUnit para Kotlin ou o pacote testing do Go).
 
-**2. Meaningful Naming:**
-- Choose descriptive variable and function names that clearly convey their purpose.
-- Avoid abbreviations that may be unclear to others.
-- An example to illustrate the importance of giving meaningful names:
-    - Not Meaningful:
-          `x = 50`
-  - Meaningful:
-          `max_user_allowed = 50` 
+### Segurança:  
 
+- Assegure-se de validar e sanitizar os dados de entrada para evitar ataques como SQL injection.  
+- Para uploads de arquivos, limite o tamanho e os tipos de arquivos aceitos (por exemplo, PDF, DOCX ou TXT).  
+- Implemente autenticação robusta (como tokens JWT) e, se necessário, criptografe senhas com um algoritmo seguro (exemplo, BCrypt).
 
-**3. Modular Code:**
-- Break down complex functions into smaller, reusable components.
-- This makes your code easier to test, debug, and maintain.
+### Validação de Dados no Frontend:  
 
-**4. Comprehensive Documentation:**
-- Include docstrings for modules, classes, and functions to explain their functionality.
-- Maintain a comprehensive `README.md` to provide an overview and usage instructions.
+- Utilize formulários com validação básica para garantir que os campos obrigatórios sejam preenchidos.
 
-**5. Version Control:**
-- Use `.gitignore` to exclude unnecessary files from your repository.
-- Commit changes frequently with clear and descriptive messages to track your project's evolution effectively.
+## 7. Deploy e Ambiente de Produção
 
-<br>
+### Hospedagem:  
 
-These recommendations are grounded in [PEP 8](https://peps.python.org/pep-0008/) and [PEP 257](https://peps.python.org/pep-0257/), the official Style Guide and Docstring Conventions for Python code (yes, there are official guidelines on how your code should be implemented!). While it's beneficial to read through these resources, you can also leverage tools to automatically identify and address areas for improvement in your code. We recommend the following libraries:
-- **Flake8** ([Library Documentation](https://flake8.pycqa.org/en/latest/)): Ensures your code adheres to PEP 8 style conventions by checking for syntax errors, undefined names, and other stylistic issues.
-- **isort** ([Library Documentation](https://pycqa.github.io/isort/)): Automatically sorts your import statements, organizing them into a consistent and readable order.
+- Escolha um serviço de hospedagem (VPS, serviço de nuvem ou PaaS) para o backend e o banco de dados, ou utilize provedores especializados.
 
-<br>
+### Configuração do Servidor:  
 
-<a name="flake8"></a>
-### Flake8 
-**Flake8** is a powerful tool for enforcing style guidelines. It scans your code to identify deviations from PEP 8, such as improper indentation, excessive line lengths, and unused imports. By integrating Flake8 into your development workflow, you can maintain clean and consistent code, making it easier to read and maintain.
+- Configure o ambiente de produção com variáveis de ambiente para dados sensíveis (credenciais do banco, chaves secretas, etc).  
+- Utilize certificados SSL para segurança na transmissão dos dados.
 
-Key Features:
-- **Syntax Checking:** Detects syntax errors that could cause your code to fail.
-- **Style Enforcement:** Ensures adherence to PEP 8 guidelines, promoting uniform coding practices.
-- **Plugin Support:** Extensible with plugins to add more checks or customize existing ones.
+### Gerenciamento de Versões:   
 
-Usage Example:
+- Use um sistema de versionamento (como Git) para controlar as alterações no código, facilitando atualizações e correções.
 
-```shell
-flake8 your_script.py
-```
+## 8. Documentação do Projeto
 
-Running this command will output any style violations or errors found in `your_script.py`, allowing you to address them promptly.
+### Documente o Código e as API Endpoints:  
 
-<br>
+- Crie um guia de uso da API (por exemplo, com Swagger/OpenAPI) para que outros desenvolvedores possam entender como interagir com o backend.  
+- Escreva um README detalhado no repositório contendo instruções para instalação, execução e deploy.
 
-<a name="isort"></a>
-### isort 
-**isort** focuses specifically on the organization of import statements. It automatically sorts imports alphabetically and separates them into sections (standard library, third-party, and local imports), ensuring that your import statements are both orderly and compliant with best practices. This not only enhances readability but also helps prevent merge conflicts and import-related errors.
+### Esclareça as Dependências:  
 
-Key Features:
-- **Automatic Sorting:** Organizes imports alphabetically and by category.
-- **Customization:** Allows configuration to match specific project requirements.
+- Liste todas as bibliotecas e ferramentas utilizadas, assim como os passos para configurar o ambiente de desenvolvimento.
 
-Usage Example:
+## 9. Aprendizado Contínuo
 
-isort is very easy to use. You can sort the imports in a Python file by running the following command in your terminal:
+### Cursos e Tutoriais:  
 
-```shell
-isort your_script.py
-```
+- Pesquise cursos online sobre desenvolvimento web utilizando Kotlin (Spring Boot ou Ktor) ou Go (Gin, Echo).  
+- Explore tutoriais sobre MySQL e modelagem de dados relacionais para adquirir uma compreensão sólida sobre bancos de dados.
 
-After running the command, save the file to apply the sorted imports.
+### Documentação Oficial:  
 
-**Example of isort in Action:**
+- Consulte a documentação oficial dos frameworks e das linguagens para esclarecer dúvidas e explorar funcionalidades avançadas.
 
-_Before isort:_
-```python
-import os
-import sys
-import requests
-from mymodule import myfunction
-import numpy as np
-```
+## Resumo dos Passos
 
-_After isort:_
+1. Levante os requisitos e defina as funcionalidades que o site deve ter (cadastro, upload, pesquisa, etc.).  
+2. Planeje a arquitetura do banco de dados MySQL e crie 4 tabelas (usuários, disciplinas, documentos e comentários, por exemplo).  
+3. Escolha entre Kotlin e Go para o desenvolvimento do backend, configure o ambiente e CRUD dos recursos.  
+4. Desenvolva uma interface web simples utilizando HTML/CSS/JavaScript para interação com a API.  
+5. Configure a segurança, valide os dados e implemente testes para garantir o funcionamento correto da aplicação.  
+6. Faça o deploy do sistema em um ambiente de produção e documente todas as etapas do projeto.
 
-```python
-import os
-import sys
+Essa abordagem passo a passo permitirá que você vá da concepção à implantação de um site funcional, mesmo que não tenha muita experiência prévia com web ou banco de dados. Boa sorte no desenvolvimento do projeto e conte com a comunidade (e pesquisas online) para sanar dúvidas ao longo do caminho!
 
-import numpy as np
-import requests
-
-from mymodule import myfunction
-```
-
-In this example, isort has organized the imports into three distinct sections:
-- **Standard Library Imports:** os, sys
-- **Third-Party Imports:** numpy, requests
-- **Local Application Imports:** mymodule
-
-This separation improves readability and maintainability of your code by clearly distinguishing between different types of dependencies.
-
-<br>
-
-<a name="additional_tips"></a>
-### Additional Tips:
-- **Editor Integration:** Most modern code editors and IDEs, such as Visual Studio Code, support integrations for Flake8 and isort. These integrations provide real-time feedback as you write code, helping you adhere to style guidelines effortlessly. You can find easy setup tutorials with a simple search on the internet.
-- **Formatters**: There are libraries, such as **black** ([library documentation](https://pypi.org/project/black/)),  that automatically format your code according to predefined rules. While these tools can simplify the formatting process, we encourage you to also develop an understanding of what constitutes high-quality code by manually writing and formatting your code.
-- **Configuration Files:** Customize the behavior of Flake8 and isort by adding configuration files like `.flake8` or `pyproject.toml`. Tailoring these files allows you to adjust the tools to meet your project's specific needs. For example, Flake8 enforces a PEP 8 rule that raises an error if a line exceeds 79 characters. We recommend setting this limit to 99 characters. Refer to the NOTE below for detailed guidelines (retrieved from PEP 8) on maximum line length.
-
-> **_NOTE:_** Limiting the required editor window width makes it possible to have several files open side by side, and works well when using code review tools that present the two versions in adjacent columns. ...  Some teams strongly prefer a longer line length. For code maintained exclusively or primarily by a team that can reach agreement on this issue, it is okay to increase the line length limit up to 99 characters, provided that comments and docstrings are still wrapped at 72 characters. ([PEP 8 Source](https://peps.python.org/pep-0008/#maximum-line-length))
-
-
-
-<br><br>
-
-<a name="unnecessary_complexity"></a>
-## Avoiding Unnecessary Complexity in Your Code
-
-Simplicity is the hallmark of effective and maintainable code. Introducing complex structures without a clear necessity can make your code harder to understand, debug, and extend. Strive to keep your implementations as straightforward as possible, using advanced constructs like classes only when they provide clear benefits.
-
-**Why Avoid Unnecessary Complexity?**
-1. **Readability:** Simple code is easier to read and comprehend, making it accessible to more developers, including your future self.
-2. **Maintainability:** Less complex code reduces the likelihood of bugs and makes it easier to update or modify features.
-3. **Performance:** Overly intricate structures can introduce performance overheads without tangible benefits.
-4. **Collaboration:** Clear and simple code fosters better collaboration among team members, as it’s easier to onboard new contributors.
-
-One of the most common pitfalls developers face is the unnecessary use of classes. Utilizing classes when they aren’t needed can complicate your codebase without providing meaningful advantages. To maintain simplicity and enhance code clarity, it’s essential to understand when to employ classes and when alternative approaches are more appropriate. Let’s explore the appropriate scenarios for using classes and identify situations where simpler constructs would be more effective.
-
-**When to Use Classes?**
-
-Classes are powerful tools in object-oriented programming, enabling encapsulation, inheritance, and polymorphism. However, they should be used carefully:
-
-- Use Classes When:
-  - You need to model real-world entities with attributes and behaviors.
-  - You require multiple instances sharing common properties and methods.
-  - You want to leverage inheritance to extend functionality.
-  - Encapsulation is necessary to protect and manage data integrity.
-
-- Avoid Classes When:
-  - The functionality can be effectively handled with functions and simple data structures.
-  - You’re writing small scripts or modules where object-oriented features offer no clear advantage.
-  - Introducing a class would add unnecessary layers without improving code clarity or reusability.
-
-**Example: Using Functions Over Classes**
-
-**Overcomplicated Approach with Classes:**
-```python
-class OrderProcessor:
-    def __init__(self, order):
-        self.order = order
-
-    def is_high_priority(self):
-        return (
-            self.order['quantity'] > 100 and
-            self.order['price'] > 500 and
-            self.order['status'] == 'confirmed' and
-            self.order['customer_type'] == 'premium' and
-            self.order['delivery_date'] > '2024-01-01'
-        )
-
-    def process(self):
-        if self.is_high_priority():
-            print("Processing high-priority premium order")
-        else:
-            print("Processing regular order")
-
-def main():
-    order = {
-        'quantity': 150,
-        'price': 600,
-        'status': 'confirmed',
-        'customer_type': 'premium',
-        'delivery_date': '2024-02-01'
-    }
-    processor = OrderProcessor(order)
-    processor.process()
-
-if __name__ == "__main__":
-    main()
-```
-
-**Simplified Approach with Functions:**
-
-```python
-def is_high_priority(order):
-    return (
-        order['quantity'] > 100 and
-        order['price'] > 500 and
-        order['status'] == 'confirmed' and
-        order['customer_type'] == 'premium' and
-        order['delivery_date'] > '2024-01-01'
-    )
-
-def process_order(order):
-    if is_high_priority(order):
-        print("Processing high-priority premium order")
-    else:
-        print("Processing regular order")
-
-def main():
-    order = {
-        'quantity': 150,
-        'price': 600,
-        'status': 'confirmed',
-        'customer_type': 'premium',
-        'delivery_date': '2024-02-01'
-    }
-    process_order(order)
-
-if __name__ == "__main__":
-    main()
-
-```
-
-**Comparison:**
-- **Clarity:** The function-based approach is more straightforward, making it easier to understand the flow.
-- **Efficiency:** Fewer lines of code and no need to manage class instances.
-- **Maintainability:** Simpler functions are easier to test and modify individually.
-
-
-By avoiding unnecessary complexity and using advanced structures like classes only when they add clear value, you create code that is easier to read, maintain, and scale. Emphasize simplicity in your coding practices to enhance overall code quality and foster a more efficient development process.
-
-<br><br>
-
-<a name="final_considerations"></a>
-## Final considerations 
-
-This template is recommended for development projects. Although it can be customized to fit your specific needs, following this structure will make the organization's repositories more comprehensible to external contributors and the wider community.
-
-<br><br>
-
-<a name="contact"></a>
-## Contact
-If you have any questions or suggestions about any of the topics covered by this template, please do not hesitate to contact us:
-
-Victor Zacarias: victor.zacarias@usp.br
+---
