@@ -5,11 +5,17 @@ Este repositório contém o código-fonte do USPShare, uma aplicação desenvolv
 O USPShare é uma aplicação web que permite aos estudantes da USP compartilharem diversos materiais acadêmicos, visando aprimorar o desempenho acadêmico e fomentar a colaboração. As principais funcionalidades do USPShare incluem:
 
 Compartilhamento de anotações de aula
+
 Acesso a provas antigas
+
 Publicação de correções feitas por professores
+
 Disponibilização de resumos acadêmicos
+
 Compartilhamento de listas de exercícios e materiais complementares
+
 Busca avançada e categorização dos recursos compartilhados
+
 Avaliação e feedback sobre os materiais compartilhados
 
 ## Tecnologias Utilizadas
