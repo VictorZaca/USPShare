@@ -23,7 +23,9 @@ Frontend: React
 
 Backend: Golang
 
-Banco de Dados: MongoDB
+Banco de Dados: PostgreSQL
+
+Conexão Backend-BD: GORM
 
 Autenticação: JWT (JSON Web Tokens)
 
