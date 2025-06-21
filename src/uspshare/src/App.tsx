@@ -1,80 +1,89 @@
-import React, { useState } from 'react';
-import { BrowserRouter, Routes, Route, Link as RouterLink } from 'react-router-dom';
+
+import React, { useState, useMemo, createContext } from 'react';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
-import AppBar from '@mui/material/AppBar';
-import Toolbar from '@mui/material/Toolbar';
-import IconButton from '@mui/material/IconButton';
-import MenuIcon from '@mui/icons-material/Menu';
-import Brightness4Icon from '@mui/icons-material/Brightness4';
-import Brightness7Icon from '@mui/icons-material/Brightness7';
-import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
-import Drawer from '@mui/material/Drawer';
-import List from '@mui/material/List';
-import ListItem from '@mui/material/ListItem';
-import ListItemText from '@mui/material/ListItemText';
-import Button from '@mui/material/Button';
 
+// Import your pages
+import Menu from './pages/Menu';
 import LandingPage from './pages/LandingPage';
-import ExplorePage from './pages/ExplorePage';  // placeholder
-// import UploadPage from './pages/UploadPage';    // placeholder
-// import LoginPage from './pages/LoginPage';      // placeholder
+import ExplorePage from './pages/ExplorePage';
+import ContactPage from './pages/ContactPage';
+import FAQPage from './pages/FAQPage';
+import FeedbackPage from './pages/FeedbackPage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
+import GuidePage from './pages/GuidePage';
+import LoginPage from './pages/LoginPage';
+import PrivacyPage from './pages/PrivacyPage';
+import ProfilePage from './pages/ProfilePage';
+import ReportPage from './pages/ReportPage';
+import SignupPage from './pages/SignupPage';
+import TermsPage from './pages/TermsPage';
+import HomePage from './pages/HomePage';
+import UploadPage from './pages/UploadPage';
+import AboutPage from './pages/AboutPage';
+import Footer from './pages/Footer';
+// ... other page imports
+import {AuthProvider} from './context/AuthContext'; // Import your AuthProvider
+
+// 1. Create and export the context
+export const ColorModeContext = createContext({ toggleColorMode: () => {} });
 
 export default function App() {
   const [mode, setMode] = useState<"light" | "dark">('light');
-  const theme = React.useMemo(
+
+  // Memoize the context value to prevent unnecessary re-renders of consumers
+  const colorMode = useMemo(
+    () => ({
+      toggleColorMode: () => {
+        setMode((prevMode) => (prevMode === 'light' ? 'dark' : 'light'));
+      },
+    }),
+    [],
+  );
+
+  const theme = useMemo(
     () => createTheme({ palette: { mode } }),
     [mode]
   );
-  const [drawerOpen, setDrawerOpen] = useState(false);
-
-  const toggleTheme = () => setMode(prev => prev === 'light' ? 'dark' : 'light');
-  const toggleDrawer = (open: boolean | ((prevState: boolean) => boolean)) => () => setDrawerOpen(open);
-
-  const navItems = [
-    { label: 'Explorar', path: '/explore' },
-    { label: 'Compartilhar', path: '/upload' },
-    { label: 'Entrar', path: '/login' }
-  ];
 
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <BrowserRouter>
-        <AppBar position="sticky">
-          <Toolbar>
-            <IconButton edge="start" color="inherit" onClick={toggleDrawer(true)}>
-              <MenuIcon />
-            </IconButton>
-            <Typography variant="h6" sx={{ flexGrow: 1 }} component={RouterLink} to="/" color="inherit" style={{ textDecoration: 'none' }}>
-              USPShare
-            </Typography>
-            <IconButton color="inherit" onClick={toggleTheme}>
-              {mode === 'light' ? <Brightness4Icon /> : <Brightness7Icon />}
-            </IconButton>
-          </Toolbar>
-        </AppBar>
-        <Drawer anchor="left" open={drawerOpen} onClose={toggleDrawer(false)}>
-          <Box sx={{ width: 250 }} role="presentation" onClick={toggleDrawer(false)}>
-            <List>
-              {navItems.map(item => (
-                <ListItem type='button' key={item.label} component={RouterLink} to={item.path}>
-                  <ListItemText primary={item.label} />
-                </ListItem>
-              ))}
-            </List>
-          </Box>
-        </Drawer>
-        <Box component="main">
-          <Routes>
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/explore" element={<ExplorePage />} />
-            {/* <Route path="/upload" element={<UploadPage />} />
-            <Route path="/login" element={<LoginPage />} /> */}
-          </Routes>
-        </Box>
-      </BrowserRouter>
-    </ThemeProvider>
+    // 2. Provide the context value to the component tree
+    <AuthProvider>
+      <ColorModeContext.Provider value={colorMode}>
+        <ThemeProvider theme={theme}>
+          <CssBaseline />
+          <BrowserRouter>
+            {/* 3. The Menu component no longer needs props for theme switching */}
+            <Menu />
+            <Box component="main">
+              <Routes>
+              <Route path="/" element={<LandingPage />} />
+              <Route path="/explore" element={<ExplorePage />} />
+              {/* <Route path="/upload" element={<UploadPage />} />
+              <Route path="/login" element={<LoginPage />} /> */}
+              <Route path="/contact" element={<ContactPage />} />
+              <Route path="/faq" element={<FAQPage />} />
+              <Route path="/feedback" element={<FeedbackPage />} />
+              <Route path='/forgotpassword' element={<ForgotPasswordPage />} />
+              <Route path="/guide" element={<GuidePage />} />
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/privacy" element={<PrivacyPage />} />
+              <Route path="/profile" element={<ProfilePage />} />
+              <Route path="/report" element={<ReportPage />} />
+              <Route path="/signup" element={<SignupPage />} />
+              <Route path="/terms" element={<TermsPage />} />
+              <Route path="/test" element={<HomePage />} />
+              <Route path="/upload" element={<UploadPage />} />
+              <Route path="/about" element={<AboutPage />} />
+              {/* Add other routes as needed */}
+              </Routes>
+            </Box>
+            <Footer />
+          </BrowserRouter>
+        </ThemeProvider>
+      </ColorModeContext.Provider>
+    </AuthProvider>
   );
 }
