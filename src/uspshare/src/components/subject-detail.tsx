@@ -1,95 +1,132 @@
-"use client"
+import React, { useState, useMemo, FC, SyntheticEvent } from 'react';
+import { Box, Typography, Grid, Paper, Tabs, Tab, Button, Stack } from '@mui/material';
 
-import { FileCard } from "@/components/file-card"
-import { Button } from "@/components/ui/button"
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { useState } from "react"
+// --- ALTERAÇÃO: Importando os componentes necessários ---
+// 1. O card que exibe cada arquivo individualmente
+import { FileCard } from './file-card'; 
+// 2. O Link do React Router para navegação
+import { Link as RouterLink } from 'react-router-dom';
+
+// --- Interfaces (sem alterações) ---
+interface File {
+  id: string;
+  title: string;
+  type: string;
+  course: string;
+  courseCode: string;
+  professor: string;
+  semester: string;
+  uploadDate: string;
+  tags?: string[];
+  likes: number;
+  comments: number;
+}
 
 interface SubjectDetailProps {
   subject: {
-    courseCode: string
-    course: string
-    files: any[]
-  }
-  selectedFileType: string
-  activeFilters: string[]
-  sortBy?: "recent" | "popular" | "default"
+    courseCode: string;
+    course: string;
+    files: File[];
+  };
+  selectedFileType: string;
+  activeFilters: string[];
+  sortBy?: "recent" | "popular" | "default";
 }
 
-export function SubjectDetail({ subject, selectedFileType, activeFilters, sortBy = "default" }: SubjectDetailProps) {
-  const [activeTab, setActiveTab] = useState<string>("all")
-  const [showAll, setShowAll] = useState(false)
+// --- O Componente Principal ---
+export const SubjectDetail: FC<SubjectDetailProps> = ({
+  subject, // Agora recebe os dados reais via props
+  selectedFileType,
+  activeFilters,
+  sortBy = "default",
+}) => {
+  // Toda a sua lógica interna de estado e filtragem permanece a mesma.
+  const [activeTab, setActiveTab] = useState<string>("all");
+  const [showAll, setShowAll] = useState(false);
 
-  // Get unique file types in this subject
-  const fileTypes = Array.from(new Set(subject.files.map((file) => file.type)))
+  const filteredAndSortedFiles = useMemo(() => {
+    let files = subject.files.filter((file) => {
+      const matchesTypeFromParent = selectedFileType === "all" || file.type === selectedFileType;
+      const matchesActiveTab = activeTab === "all" || file.type === activeTab;
+      const matchesFilters = activeFilters.length === 0 || activeFilters.some((filter) => file.tags ? file.tags.includes(filter) : false);
+      return matchesTypeFromParent && matchesActiveTab && matchesFilters;
+    });
 
-  // Filter files based on selected type and active filters
-  let filteredFiles = subject.files.filter((file) => {
-    const matchesType = selectedFileType === "all" || file.type === selectedFileType
-    const matchesActiveTab = activeTab === "all" || file.type === activeTab
-    const matchesFilters = activeFilters.length === 0 || activeFilters.some((filter) => file.tags.includes(filter))
+    if (sortBy === "recent") {
+      files.sort((a, b) => new Date(b.uploadDate).getTime() - new Date(a.uploadDate).getTime());
+    } else if (sortBy === "popular") {
+      files.sort((a, b) => b.likes - a.likes);
+    }
+    return files;
+  }, [subject.files, selectedFileType, activeTab, activeFilters, sortBy]);
 
-    return matchesType && matchesActiveTab && matchesFilters
-  })
+  const fileTypesInSubject = useMemo(() => {
+    const counts: Record<string, number> = {};
+    subject.files.forEach(file => {
+      counts[file.type] = (counts[file.type] || 0) + 1;
+    });
+    return Object.entries(counts).map(([type, count]) => ({ type, count }));
+  }, [subject.files]);
 
-  // Sort files based on sortBy prop
-  if (sortBy === "recent") {
-    filteredFiles = [...filteredFiles].sort(
-      (a, b) => new Date(b.uploadDate).getTime() - new Date(a.uploadDate).getTime(),
-    )
-  } else if (sortBy === "popular") {
-    filteredFiles = [...filteredFiles].sort((a, b) => b.likes - a.likes)
-  }
-
-  // Limit displayed files unless showAll is true
-  const displayedFiles = showAll ? filteredFiles : filteredFiles.slice(0, 6)
-  const hasMoreFiles = filteredFiles.length > 6 && !showAll
+  const handleTabChange = (event: SyntheticEvent, newValue: string) => {
+    setActiveTab(newValue);
+  };
+  
+  const displayedFiles = showAll ? filteredAndSortedFiles : filteredAndSortedFiles.slice(0, 6);
+  const hasMoreFiles = filteredAndSortedFiles.length > 6 && !showAll;
 
   return (
-    <div className="bg-muted/30 rounded-lg p-4 mt-1 border animate-in fade-in-50 slide-in-from-top-2 duration-300">
-      <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab} className="mb-4">
-        <TabsList>
-          <TabsTrigger value="all">Todos ({subject.files.length})</TabsTrigger>
-          {fileTypes.map((type) => {
-            const count = subject.files.filter((file) => file.type === type).length
-            return (
-              <TabsTrigger key={type} value={type}>
-                {type.charAt(0).toUpperCase() + type.slice(1)}s ({count})
-              </TabsTrigger>
-            )
-          })}
-        </TabsList>
-      </Tabs>
+    <Paper 
+      variant="outlined" 
+      sx={{ p: 2, mt: 1, bgcolor: 'action.hover', overflow: 'hidden' }}
+    >
+      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
+        <Tabs value={activeTab} onChange={handleTabChange} variant="scrollable" scrollButtons="auto">
+          <Tab label={`Todos (${filteredAndSortedFiles.length})`} value="all" />
+          {fileTypesInSubject.map(({ type, count }) => (
+            <Tab
+              key={type}
+              label={`${type.charAt(0).toUpperCase() + type.slice(1)}s (${count})`}
+              value={type}
+            />
+          ))}
+        </Tabs>
+      </Box>
 
       {displayedFiles.length > 0 ? (
-        <>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <Stack spacing={3}>
+          <Grid container spacing={2}>
             {displayedFiles.map((file) => (
-              <FileCard key={file.id} file={file} />
+              <Grid key={file.id} size={{ xs: 12, sm: 6, lg: 4 }}>
+                {/* O FileCard agora é um link para a página de detalhes do arquivo */}
+                <RouterLink to={`/file/${file.id}`} style={{ textDecoration: 'none' }}>
+                  <FileCard file={{ ...file, tags: file.tags || [] }} />
+                </RouterLink>
+              </Grid>
             ))}
-          </div>
-
+          </Grid>
+          
           {hasMoreFiles && (
-            <div className="flex justify-center mt-6">
-              <Button variant="outline" onClick={() => setShowAll(true)}>
-                Ver todos os {filteredFiles.length} materiais
+            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
+              <Button variant="outlined" onClick={() => setShowAll(true)}>
+                Ver todos os {filteredAndSortedFiles.length} materiais
               </Button>
-            </div>
+            </Box>
           )}
 
           {showAll && (
-            <div className="flex justify-center mt-6">
-              <Button variant="outline" onClick={() => setShowAll(false)}>
+            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
+              <Button variant="outlined" onClick={() => setShowAll(false)}>
                 Mostrar menos
               </Button>
-            </div>
+            </Box>
           )}
-        </>
+        </Stack>
       ) : (
-        <div className="text-center py-8">
-          <p className="text-muted-foreground">Nenhum material encontrado com os filtros selecionados.</p>
-        </div>
+        <Box sx={{ textAlign: 'center', py: 6 }}>
+          <Typography color="text.secondary">Nenhum material encontrado com os filtros selecionados.</Typography>
+        </Box>
       )}
-    </div>
-  )
-}
+    </Paper>
+  );
+};

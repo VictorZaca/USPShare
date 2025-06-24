@@ -27,6 +27,13 @@ func main() {
 		MaxAge:           300,
 	}))
 
+	// File Server para servir os arquivos da pasta /uploads
+	// Isso cria um handler que serve arquivos estáticos.
+	fileServer := http.FileServer(http.Dir("./uploads/"))
+	// Isso diz ao roteador para remover o prefixo /uploads/ da URL antes de procurar o arquivo.
+	// Ex: uma requisição para /uploads/meuarquivo.pdf vai procurar por ./uploads/meuarquivo.pdf
+	r.Handle("/uploads/*", http.StripPrefix("/uploads/", fileServer))
+
 	// Registrar as rotas da API
 	api.RegisterRoutes(r)
 

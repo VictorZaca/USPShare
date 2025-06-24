@@ -8,6 +8,8 @@ func RegisterRoutes(r *chi.Mux) {
 	r.Post("/api/signup", HandleSignup)
 	r.Post("/api/login", HandleLogin)
 	r.Get("/api/resources", HandleGetResources)
+	r.Get("/api/resource/{id}", HandleGetResourceByID)
+	r.Get("/api/resource/{id}/comments", HandleListComments)
 
 	// Rotas Protegidas
 	r.Group(func(r chi.Router) {
@@ -15,5 +17,9 @@ func RegisterRoutes(r *chi.Mux) {
 		r.Post("/api/upload", HandleUploadResource)
 		r.Get("/api/profile", HandleGetProfile)
 		r.Get("/api/my-uploads", HandleGetUserUploads)
+		r.Post("/api/resource/{id}/comments", HandlePostComment)
+
+		r.Get("/api/notifications", HandleGetNotifications)
+		r.Post("/api/notifications/{id}/read", HandleMarkNotificationAsRead)
 	})
 }

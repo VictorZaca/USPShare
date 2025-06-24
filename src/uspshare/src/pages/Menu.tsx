@@ -1,6 +1,6 @@
 // src/Navbar.js - VERSÃO ATUALIZADA (Mínimas Alterações)
 
-import React, { useState, useContext } from "react";
+import React, { useState, useContext, useEffect } from "react";
 import { useLocation, Link as RouterLink, useNavigate } from "react-router-dom"; // Adicionado useNavigate
 import {
   AppBar,
@@ -23,10 +23,12 @@ import {
   TextField,
   InputAdornment,
   useTheme,
+  Badge,
 } from "@mui/material";
 
-// --- ALTERAÇÃO 1: IMPORTAR NOSSO HOOK DE AUTENTICAÇÃO ---
 import { useAuth } from "../context/AuthContext";
+import apiClient from "../api/axios";
+
 
 // Seus imports de ícones...
 import MenuIcon from "@mui/icons-material/Menu";
@@ -45,14 +47,27 @@ import Brightness7Icon from '@mui/icons-material/Brightness7';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import GavelIcon from '@mui/icons-material/Gavel';
 import EmailOutlinedIcon from '@mui/icons-material/EmailOutlined';
+import NotificationsIcon from '@mui/icons-material/Notifications';
 
 import { ColorModeContext } from "../App";
 
+interface Notification {
+  id: string;
+  actorName: string;
+  message: string;
+  resourceId: string;
+  commentId?: string; 
+  isRead: boolean;
+  createdAt: string;
+}
 
 export default function Navbar() {
-  // --- ALTERAÇÃO 2: REMOVER O ESTADO LOCAL E USAR O CONTEXTO GLOBAL ---
   // const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const { isAuthenticated, user, logout } = useAuth();
+  const auth = useAuth();
+  if (!auth) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
+  const { isAuthenticated, user, logout } = auth;
   const navigate = useNavigate();
   // --- FIM DA ALTERAÇÃO 2 ---
 
@@ -69,6 +84,57 @@ export default function Navbar() {
   const handleCloseUserMenu = () => setAnchorElUser(null);
   const handleOpenMoreMenu = (event: React.MouseEvent<HTMLButtonElement>) => setAnchorElMore(event.currentTarget);
   const handleCloseMoreMenu = () => setAnchorElMore(null);
+
+  const [anchorElNotifications, setAnchorElNotifications] = useState<null | HTMLElement>(null);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+
+  const handleOpenNotificationsMenu = (event: React.MouseEvent<HTMLElement>) => setAnchorElNotifications(event.currentTarget);
+  const handleCloseNotificationsMenu = () => setAnchorElNotifications(null);
+
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      if (isAuthenticated) {
+        try {
+          const response = await apiClient.get<Notification[]>('/api/notifications');
+          setNotifications(response.data || []);
+        } catch (error) {
+          console.error("Failed to fetch notifications:", error);
+        }
+      } else {
+        setNotifications([]); // Limpa as notificações ao fazer logout
+      }
+    };
+
+    fetchNotifications();
+    // Você pode adicionar um polling aqui para buscar de tempos em tempos
+    const interval = setInterval(fetchNotifications, 60000); // Ex: a cada 60 segundos
+    return () => clearInterval(interval);
+
+  }, [isAuthenticated]); // Roda quando o status de login muda
+
+  // --- ALTERAÇÃO: Lógica para marcar notificação como lida ---
+  const handleNotificationClick = async (notification: Notification) => {
+    handleCloseNotificationsMenu();
+    navigate(`/file/${notification.resourceId}?highlight=${notification.commentId}#${notification.commentId}`);
+
+    // Se a notificação ainda não foi lida, marca como lida
+    if (!notification.isRead) {
+      try {
+        await apiClient.post(`/api/notifications/${notification.id}/read`);
+        // Atualiza o estado local para a UI responder instantaneamente
+        setNotifications(prev =>
+          prev.map(n =>
+            n.id === notification.id ? { ...n, isRead: true } : n
+          )
+        );
+      } catch (error) {
+        console.error("Failed to mark notification as read:", error);
+      }
+    }
+  };
+
+  // Calcula a contagem de notificações não lidas
+  const unreadCount = notifications.filter(n => !n.isRead).length;
 
   // SEU ARRAY DE LINKS ORIGINAL, SEM MUDANÇAS
   const navLinks = [
@@ -117,9 +183,7 @@ export default function Navbar() {
         borderColor: "divider",
       }}
     >
-      <Toolbar>
-        {/* Todo o seu JSX permanece o mesmo até a parte de login */}
-        
+      <Toolbar>        
         <Stack direction="row" alignItems="center" spacing={1} sx={{ flexGrow: { xs: 1, md: 0 } }}>
           <IconButton
             color="inherit"
@@ -195,11 +259,46 @@ export default function Navbar() {
             {theme.palette.mode === 'dark' ? <Brightness7Icon /> : <Brightness4Icon />}
           </IconButton>
           
-          {/* --- ALTERAÇÃO 3: USAR `isAuthenticated` PARA DECIDIR O QUE MOSTRAR --- */}
           {isAuthenticated ? (
             <>
+              <IconButton color="inherit" onClick={handleOpenNotificationsMenu}>
+                <Badge badgeContent={unreadCount} color="error">
+                  <NotificationsIcon />
+                </Badge>
+              </IconButton>
+               <Menu
+                    anchorEl={anchorElNotifications}
+                    open={Boolean(anchorElNotifications)}
+                    onClose={handleCloseNotificationsMenu}
+                    slotProps={{ list: { 'aria-labelledby': 'notifications-button' } }}
+                    sx={{ mt: 1 }}
+                  >
+                <MenuItem disabled>
+                    <Typography variant="subtitle1" sx={{ px: 1 }}>Notificações</Typography>
+                </MenuItem>
+                <Divider />
+                {notifications.length > 0 ? (
+                  notifications.map((notification) => (
+                    <MenuItem 
+                      key={notification.id} 
+                      onClick={() => handleNotificationClick(notification)}
+                      // Destaca notificações não lidas
+                      sx={{ fontWeight: notification.isRead ? 'normal' : 'bold', bgcolor: notification.isRead ? 'transparent' : 'action.hover' }}
+                    >
+                      <ListItemText 
+                        primary={`${notification.actorName} ${notification.message}`}
+                        secondary={new Date(notification.createdAt).toLocaleString('pt-BR')}
+                      />
+                    </MenuItem>
+                  ))
+                ) : (
+                  <MenuItem disabled>
+                    <ListItemText primary="Nenhuma notificação nova." />
+                  </MenuItem>
+                )}
+              </Menu>
+
               <IconButton onClick={handleOpenUserMenu}>
-                {/* O Avatar agora mostra a inicial do usuário logado */}
                 <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main' }}>
                   {user?.initial}
                 </Avatar>
@@ -218,7 +317,6 @@ export default function Navbar() {
                     <ListItemText>Meus Uploads</ListItemText>
                 </MenuItem>
                 <Divider />
-                {/* --- ALTERAÇÃO 4: O BOTÃO DE SAIR AGORA CHAMA A FUNÇÃO DE LOGOUT --- */}
                 <MenuItem onClick={handleLogout}>
                     <ListItemIcon><LogoutOutlinedIcon fontSize="small" color="error"/></ListItemIcon>
                     <ListItemText sx={{color: 'error.main'}}>Sair</ListItemText>

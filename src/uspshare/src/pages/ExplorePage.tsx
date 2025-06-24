@@ -28,7 +28,8 @@ import {
   Stack,
   List as MuiList,
   ListItemText,
-  ListItemIcon
+  ListItemIcon,
+  ListItemButton
 } from '@mui/material';
 import {
     Search as SearchIcon,
@@ -37,6 +38,8 @@ import {
     Article as ArticleIcon,
     ThumbUp as ThumbUpIcon
 } from '@mui/icons-material';
+import { Link as RouterLink } from 'react-router-dom';
+import { SubjectDetail } from '../components/subject-detail';
 
 const allFilters = {
   "Ano/Semestre": ["2023-2", "2023-1", "2022-2", "2022-1"],
@@ -51,38 +54,6 @@ interface SubjectDetailProps {
     activeFilters: string[];
     sortBy: string;
 }
-const SubjectDetail = ({ subject, selectedFileType, activeFilters, sortBy }: SubjectDetailProps) => {
-    let files = subject.files.filter((file: { type: string; tags: string | string[]; }) =>
-        (selectedFileType === 'all' || file.type === selectedFileType) &&
-        (activeFilters.length === 0 || activeFilters.some(filter => file.tags.includes(filter)))
-    );
-
-    if (sortBy === 'recent') {
-        files.sort((a: { uploadDate: string | number | Date; }, b: { uploadDate: string | number | Date; }) => new Date(b.uploadDate).getTime() - new Date(a.uploadDate).getTime());
-    } else if (sortBy === 'popular') {
-        files.sort((a: { likes: number; }, b: { likes: number; }) => b.likes - a.likes);
-    }
-
-    return (
-        <MuiList dense>
-            {files.map((file: { fileName: boolean | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | Promise<string | number | bigint | boolean | React.ReactPortal | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | null | undefined> | React.Key | null | undefined; type: any; tags: any[]; likes: string | number | bigint | boolean | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | React.ReactPortal | Promise<string | number | bigint | boolean | React.ReactPortal | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | null | undefined> | null | undefined; }) => (
-                <ListItem key={String(file.fileName)} component={Paper} elevation={1} sx={{mb: 1}}>
-                    <ListItemIcon>
-                        <ArticleIcon />
-                    </ListItemIcon>
-                    <ListItemText
-                        primary={file.fileName}
-                        secondary={`Tipo: ${file.type} | Tags: ${file.tags.join(', ')}`}
-                    />
-                    <Stack direction="row" alignItems="center" spacing={0.5}>
-                        <ThumbUpIcon fontSize="small" color="action" />
-                        <Typography variant="body2">{file.likes}</Typography>
-                    </Stack>
-                </ListItem>
-            ))}
-        </MuiList>
-    )
-};
 
 
 export default function ExplorePage() {
@@ -255,7 +226,7 @@ export default function ExplorePage() {
                          subject={subject}
                          selectedFileType={selectedFileType}
                          activeFilters={activeFilters}
-                         sortBy={activeTab === 1 ? 'recent' : activeTab === 2 ? 'popular' : 'relevant'}
+                         sortBy={activeTab === 1 ? 'recent' : activeTab === 2 ? 'popular' : 'default'}
                        />
                     </AccordionDetails>
                 </Accordion>

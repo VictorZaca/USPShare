@@ -17,6 +17,8 @@ import (
 var DB *mongo.Client
 var UserCollection *mongo.Collection
 var ResourceCollection *mongo.Collection
+var CommentCollection *mongo.Collection
+var NotificationCollection *mongo.Collection
 
 func InitDB() {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -45,6 +47,8 @@ func InitDB() {
 	database := DB.Database("uspshare")
 	UserCollection = database.Collection("users")
 	ResourceCollection = database.Collection("resources")
+	CommentCollection = database.Collection("comments")
+	NotificationCollection = database.Collection("notifications")
 
 	log.Println("Conectado ao MongoDB com sucesso!")
 	createIndexes()

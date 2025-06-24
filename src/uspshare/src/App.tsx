@@ -26,6 +26,7 @@ import AboutPage from './pages/AboutPage';
 import Footer from './pages/Footer';
 // ... other page imports
 import {AuthProvider} from './context/AuthContext'; // Import your AuthProvider
+import FilePage from './pages/FilePage';
 
 // 1. Create and export the context
 export const ColorModeContext = createContext({ toggleColorMode: () => {} });
@@ -77,6 +78,8 @@ export default function App() {
               <Route path="/test" element={<HomePage />} />
               <Route path="/upload" element={<UploadPage />} />
               <Route path="/about" element={<AboutPage />} />
+
+              <Route path="/file/:id" element={<FilePage />} />
               {/* Add other routes as needed */}
               </Routes>
             </Box>

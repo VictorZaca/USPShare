@@ -47,3 +47,33 @@ type Resource struct {
 	Tags        []string `json:"tags" bson:"tags"`
 	IsAnonymous bool     `json:"isAnonymous" bson:"isAnonymous"`
 }
+
+type Comment struct {
+	ID         primitive.ObjectID  `json:"id" bson:"_id,omitempty"`
+	ResourceID primitive.ObjectID  `json:"resourceId" bson:"resourceId"`
+	UserID     primitive.ObjectID  `json:"userId" bson:"userId"`
+	ParentID   *primitive.ObjectID `json:"parentId,omitempty" bson:"parentId,omitempty"`
+	Content    string              `json:"content" bson:"content"`
+	CreatedAt  time.Time           `json:"createdAt" bson:"createdAt"`
+}
+
+type Notification struct {
+	ID         primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	UserID     primitive.ObjectID `json:"userId" bson:"userId"`
+	ActorName  string             `json:"actorName" bson:"actorName"`
+	Type       string             `json:"type" bson:"type"`
+	Message    string             `json:"message" bson:"message"`
+	ResourceID primitive.ObjectID `json:"resourceId" bson:"resourceId"`
+	CommentID  primitive.ObjectID `json:"commentId" bson:"commentId"`
+	IsRead     bool               `json:"isRead" bson:"isRead"`
+	CreatedAt  time.Time          `json:"createdAt" bson:"createdAt"`
+}
+
+type CommentWithAuthor struct {
+	ID         primitive.ObjectID   `json:"id" bson:"_id,omitempty"`
+	Content    string               `json:"content" bson:"content"`
+	CreatedAt  time.Time            `json:"createdAt" bson:"createdAt"`
+	AuthorName string               `json:"authorName" bson:"authorName"`
+	ParentID   *primitive.ObjectID  `json:"parentId,omitempty" bson:"parentId,omitempty"`
+	Replies    []*CommentWithAuthor `json:"replies,omitempty"` // Slice de ponteiros para si mesmo
+}

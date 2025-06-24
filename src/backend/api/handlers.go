@@ -16,8 +16,10 @@ import (
 	"github.com/google/uuid"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 	"golang.org/x/crypto/bcrypt"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/golang-jwt/jwt/v5"
 )
 
@@ -267,4 +269,166 @@ func HandleGetResources(w http.ResponseWriter, r *http.Request) {
 
 	// Se tudo deu certo, enviamos a lista de recursos com status 200 OK
 	writeJSON(w, http.StatusOK, resources)
+}
+
+func HandleGetResourceByID(w http.ResponseWriter, r *http.Request) {
+	// Pega o ID da URL. Ex: /api/resource/60d...
+	idParam := chi.URLParam(r, "id") // Para Chi. Se for Fiber, seria c.Params("id")
+	objID, err := primitive.ObjectIDFromHex(idParam)
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid resource ID"})
+		return
+	}
+
+	resourceData, err := store.GetResourceByID(objID)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			writeJSON(w, http.StatusNotFound, map[string]string{"error": "Resource not found"})
+			return
+		}
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to fetch resource"})
+		return
+	}
+
+	writeJSON(w, http.StatusOK, resourceData)
+}
+
+func HandleListComments(w http.ResponseWriter, r *http.Request) {
+	resourceIDHex := chi.URLParam(r, "id")
+	resourceID, _ := primitive.ObjectIDFromHex(resourceIDHex)
+
+	comments, err := store.GetCommentsByResourceID(resourceID)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to fetch comments"})
+		return
+	}
+
+	writeJSON(w, http.StatusOK, comments)
+}
+
+// HandlePostComment cria um novo comentário. Rota protegida.
+func HandlePostComment(w http.ResponseWriter, r *http.Request) {
+	// Pega o ID do recurso da URL
+	resourceIDHex := chi.URLParam(r, "id")
+	resourceID, _ := primitive.ObjectIDFromHex(resourceIDHex)
+
+	// Pega o ID do usuário do token
+	userIDHex, _ := r.Context().Value(userContextKey).(string)
+	userID, _ := primitive.ObjectIDFromHex(userIDHex)
+
+	// Define uma struct para decodificar o corpo da requisição
+	var req struct {
+		Content  string `json:"content"`
+		ParentID string `json:"parentId,omitempty"` // Esperamos receber o parentId aqui
+	}
+
+	// Decodifica o JSON que o frontend enviou
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Content == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Comment content is required"})
+		return
+	}
+
+	// --- LOG DE DEBUG 1: O QUE O BACKEND RECEBEU? ---
+	log.Printf("Recebido pedido para postar comentário. Conteúdo: '%s', ParentID recebido: '%s'", req.Content, req.ParentID)
+
+	// Cria a base do nosso novo comentário
+	comment := models.Comment{
+		ID:         primitive.NewObjectID(),
+		ResourceID: resourceID,
+		UserID:     userID,
+		Content:    req.Content,
+		CreatedAt:  time.Now(),
+	}
+
+	// --- LÓGICA CRÍTICA: Atribui o ParentID se ele for válido ---
+	if req.ParentID != "" {
+		parentObjID, err := primitive.ObjectIDFromHex(req.ParentID)
+		if err != nil {
+			// --- LOG DE DEBUG 3: CONFIRMAÇÃO ---
+			log.Printf("ParentID recebido ('%s') é inválido. Criando como comentário principal.", req.ParentID)
+		} else {
+			// --- LOG DE DEBUG 2: CONFIRMAÇÃO ---
+			log.Printf("ParentID '%s' é válido. Anexando ao comentário.", req.ParentID)
+			comment.ParentID = &parentObjID // Atribui o ponteiro do ID
+		}
+	} else {
+		// --- LOG DE DEBUG 3: CONFIRMAÇÃO ---
+		log.Printf("ParentID recebido ('%s') é inválido ou vazio. Criando como comentário principal.", req.ParentID)
+	}
+
+	if err := store.CreateComment(&comment); err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to post comment"})
+		return
+	}
+
+	if comment.ParentID != nil {
+		parentComment, err := store.GetCommentByID(*comment.ParentID)
+		if err == nil && parentComment.UserID != comment.UserID {
+			actor, _ := store.GetUserByID(comment.UserID)
+
+			notification := models.Notification{
+				ID:         primitive.NewObjectID(),
+				UserID:     parentComment.UserID,
+				ActorName:  actor.Name,
+				Type:       "reply",
+				Message:    "respondeu ao seu comentário.",
+				ResourceID: comment.ResourceID,
+				CommentID:  comment.ID,
+				IsRead:     false,
+				CreatedAt:  time.Now(),
+			}
+			store.CreateNotification(&notification)
+		}
+	}
+
+	newCommentData, err := store.GetCommentWithAuthorByID(comment.ID)
+	if err != nil {
+		// Se falhar em buscar por algum motivo, retorna um erro.
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Comment posted, but failed to retrieve it"})
+		return
+	}
+
+	// Se deu tudo certo, retorna o objeto completo do novo comentário.
+	writeJSON(w, http.StatusCreated, newCommentData)
+}
+
+func HandleGetNotifications(w http.ResponseWriter, r *http.Request) {
+	// Pega o ID do usuário que o AuthMiddleware colocou no contexto
+	userIDHex, ok := r.Context().Value(userContextKey).(string)
+	if !ok {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "Unauthorized"})
+		return
+	}
+	userID, _ := primitive.ObjectIDFromHex(userIDHex)
+
+	notifications, err := store.GetNotificationsByUserID(userID)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to fetch notifications"})
+		return
+	}
+
+	writeJSON(w, http.StatusOK, notifications)
+}
+
+// HandleMarkNotificationAsRead marca uma notificação específica como lida.
+func HandleMarkNotificationAsRead(w http.ResponseWriter, r *http.Request) {
+	// Pega o ID da notificação da URL (ex: /api/notifications/SEU_ID/read)
+	notificationIDHex := chi.URLParam(r, "id")
+	notificationID, err := primitive.ObjectIDFromHex(notificationIDHex)
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid notification ID"})
+		return
+	}
+
+	// Pega o ID do usuário do token para segurança
+	userIDHex, _ := r.Context().Value(userContextKey).(string)
+	userID, _ := primitive.ObjectIDFromHex(userIDHex)
+
+	err = store.MarkNotificationAsRead(notificationID, userID)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to mark notification as read"})
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]string{"message": "Notification marked as read"})
 }
