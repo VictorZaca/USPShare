@@ -27,6 +27,12 @@ import Footer from './pages/Footer';
 // ... other page imports
 import {AuthProvider} from './context/AuthContext'; // Import your AuthProvider
 import FilePage from './pages/FilePage';
+import AdminPage from './pages/AdminPage';
+import { AdminProtectedRoute } from './pages/AdminProtectedRoute';
+import { LikesProvider } from './context/LikesContext';
+import { CommentLikesProvider } from './context/CommentLikesContext';
+import ProtectedRoute from './pages/ProtectedRoute';
+import MyUploadsPage from './pages/MyUploadsPage';
 
 // 1. Create and export the context
 export const ColorModeContext = createContext({ toggleColorMode: () => {} });
@@ -52,41 +58,46 @@ export default function App() {
   return (
     // 2. Provide the context value to the component tree
     <AuthProvider>
-      <ColorModeContext.Provider value={colorMode}>
-        <ThemeProvider theme={theme}>
-          <CssBaseline />
-          <BrowserRouter>
-            {/* 3. The Menu component no longer needs props for theme switching */}
-            <Menu />
-            <Box component="main">
-              <Routes>
-              <Route path="/" element={<LandingPage />} />
-              <Route path="/explore" element={<ExplorePage />} />
-              {/* <Route path="/upload" element={<UploadPage />} />
-              <Route path="/login" element={<LoginPage />} /> */}
-              <Route path="/contact" element={<ContactPage />} />
-              <Route path="/faq" element={<FAQPage />} />
-              <Route path="/feedback" element={<FeedbackPage />} />
-              <Route path='/forgotpassword' element={<ForgotPasswordPage />} />
-              <Route path="/guide" element={<GuidePage />} />
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/privacy" element={<PrivacyPage />} />
-              <Route path="/profile" element={<ProfilePage />} />
-              <Route path="/report" element={<ReportPage />} />
-              <Route path="/signup" element={<SignupPage />} />
-              <Route path="/terms" element={<TermsPage />} />
-              <Route path="/test" element={<HomePage />} />
-              <Route path="/upload" element={<UploadPage />} />
-              <Route path="/about" element={<AboutPage />} />
+      <LikesProvider>
+        <CommentLikesProvider>
+          <ColorModeContext.Provider value={colorMode}>
+            <ThemeProvider theme={theme}>
+              <CssBaseline />
+              <BrowserRouter>
+                {/* 3. The Menu component no longer needs props for theme switching */}
+                <Menu />
+                <Box component="main">
+                  <Routes>
+                  <Route path="/" element={<LandingPage />} />
+                  <Route path="/explore" element={<ExplorePage />} />
+                  <Route path="/contact" element={<ContactPage />} />
+                  <Route path="/faq" element={<FAQPage />} />
+                  <Route path="/feedback" element={<FeedbackPage />} />
+                  <Route path='/forgotpassword' element={<ForgotPasswordPage />} />
+                  <Route path="/guide" element={<GuidePage />} />
+                  <Route path="/login" element={<LoginPage />} />
+                  <Route path="/privacy" element={<PrivacyPage />} />
+                  <Route path="/profile" element={<ProfilePage />} />
+                  <Route path="/report" element={<ReportPage />} />
+                  <Route path="/signup" element={<SignupPage />} />
+                  <Route path="/terms" element={<TermsPage />} />
+                  <Route path="/test" element={<HomePage />} />
+                  <Route path="/upload" element={<UploadPage />} />
+                  <Route path="/uploads" element={<MyUploadsPage />} />
+                  <Route path="/about" element={<AboutPage />} />
 
-              <Route path="/file/:id" element={<FilePage />} />
-              {/* Add other routes as needed */}
-              </Routes>
-            </Box>
-            <Footer />
-          </BrowserRouter>
-        </ThemeProvider>
-      </ColorModeContext.Provider>
+                  <Route path="/file/:id" element={<FilePage />} />
+
+                  <Route path="/admin" element={<AdminProtectedRoute><AdminPage /></AdminProtectedRoute>} />
+                  {/* Add other routes as needed */}
+                  </Routes>
+                </Box>
+                <Footer />
+              </BrowserRouter>
+            </ThemeProvider>
+          </ColorModeContext.Provider>
+        </CommentLikesProvider>
+      </LikesProvider>
     </AuthProvider>
   );
 }

@@ -29,7 +29,8 @@ import {
   List as MuiList,
   ListItemText,
   ListItemIcon,
-  ListItemButton
+  ListItemButton,
+  Avatar
 } from '@mui/material';
 import {
     Search as SearchIcon,
@@ -41,11 +42,7 @@ import {
 import { Link as RouterLink } from 'react-router-dom';
 import { SubjectDetail } from '../components/subject-detail';
 
-const allFilters = {
-  "Ano/Semestre": ["2023-2", "2023-1", "2022-2", "2022-1"],
-  "Tags": ["com-gabarito", "dificil", "conceitual", "pratico"],
-  "Professores": ["prof-silva", "prof-santos", "prof-oliveira"]
-};
+
 
 // Componente para exibir os detalhes de uma disciplina e seus arquivos
 interface SubjectDetailProps {
@@ -68,7 +65,17 @@ export default function ExplorePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // A lógica de agrupamento e filtragem principal permanece a mesma
+  interface FilterOptions {
+    tags: { _id: string; name: string }[];
+    professors: { _id: string; name: string; avatarUrl: string }[];
+  }
+
+  const [filterOptions, setFilterOptions] = useState<FilterOptions>({
+    tags: [],
+    professors: []
+  });
+
+
   const subjectGroups = allResources.reduce((groups: Record<string, { courseCode: string; course: string; files: any[] }>, file) => {
     const key = file.courseCode;
     if (!groups[key]) {
@@ -87,9 +94,17 @@ export default function ExplorePage() {
       selectedFileType === "all" || subject.files.some((file) => file.type === selectedFileType);
     const hasMatchingFilters =
       activeFilters.length === 0 ||
-      subject.files.some((file) => activeFilters.some((filter) => file.tags.includes(filter)));
+      subject.files.some((file) =>
+      activeFilters.some((filter) =>
+        (file.tags && file.tags.includes(filter)) ||
+        (file.semester && file.semester === filter) ||
+        (file.professor && file.professor === filter)
+      )
+      );
+      
     return matchesSearch && hasMatchingFileType && hasMatchingFilters;
   });
+
 
   let sortedAndFilteredSubjects = [...filteredSubjects];
   if (activeTab === 1) { // Recentes
@@ -115,16 +130,59 @@ export default function ExplorePage() {
     setSelectedFileType("all");
   };
 
+  const semesters = [
+    { value: '2025-1', label: '2025-1' },
+    { value: '2024-2', label: '2024-2' },
+    { value: '2024-1', label: '2024-1' },
+    { value: '2023-2', label: '2023-2' },
+    { value: '2023-1', label: '2023-1' },
+    { value: '2022-2', label: '2022-2' },
+    { value: '2022-1', label: '2022-1' },
+    { value: '2021-2', label: '2021-2' },
+    { value: '2021-1', label: '2021-1' },
+    { value: '2020-2', label: '2020-2' },
+    { value: '2020-1', label: '2020-1' },
+    { value: '2019-2', label: '2019-2' },
+    { value: '2019-1', label: '2019-1' },
+    { value: '2018-2', label: '2018-2' },
+    { value: '2018-1', label: '2018-1' },
+    { value: '2017-2', label: '2017-2' },
+    { value: '2017-1', label: '2017-1' },
+    { value: '2016-2', label: '2016-2' },
+    { value: '2016-1', label: '2016-1' },
+    { value: '2015-2', label: '2015-2' },
+    { value: '2015-1', label: '2015-1' },
+    { value: '2014-2', label: '2014-2' },
+    { value: '2014-1', label: '2014-1' },
+    { value: '2013-2', label: '2013-2' },
+    { value: '2013-1', label: '2013-1' },
+  ]
+
   const handleSubjectAccordionChange = (panel: string) => (event: any, isExpanded: boolean) => {
     setExpandedSubject(isExpanded ? panel : null);
   };
 
   useEffect(() => {
-    const fetchResources = async () => {
+    const fetchInitialData = async () => {
         try {
             setLoading(true);
-            const response = await apiClient.get('/api/resources');
-            setAllResources(response.data || []); // Garante que é um array
+            // Usamos Promise.all para fazer todas as chamadas de API em paralelo
+            const [
+              resourcesRes, 
+              tagsRes, 
+              profsRes, 
+            ] = await Promise.all([
+              apiClient.get('/api/resources'),
+              apiClient.get('/api/data/tags'),
+              apiClient.get('/api/data/professors'),
+            ]);
+
+            setAllResources(resourcesRes.data || []);
+            setFilterOptions({
+              tags: tagsRes.data || [],
+              professors: profsRes.data || [],
+            });
+
         } catch (err) {
             setError('Não foi possível carregar os materiais.');
             console.error(err);
@@ -133,8 +191,8 @@ export default function ExplorePage() {
         }
     };
 
-    fetchResources();
-}, []); // Executa apenas uma vez, quando o componente monta
+    fetchInitialData();
+  }, []); 
 
   return (
     <Container sx={{ py: 4 }}>
@@ -247,29 +305,53 @@ export default function ExplorePage() {
       <Drawer anchor="right" open={isFilterDrawerOpen} onClose={() => setFilterDrawerOpen(false)}>
         <Box sx={{ width: 300, p: 3 }} role="presentation">
           <Typography variant="h6" component="h2" gutterBottom>Filtros Avançados</Typography>
-          <Typography variant="body2" color="text.secondary" gutterBottom>Refine sua busca com filtros específicos</Typography>
           
           <Stack spacing={4} sx={{mt: 4}}>
-            {Object.entries(allFilters).map(([title, options]) => (
-                <Box key={title}>
-                    <Typography variant="subtitle2" component="h3" fontWeight="bold">{title}</Typography>
-                    <List dense>
-                    {options.map(option => (
-                        <ListItem key={option} disablePadding>
-                            <FormControlLabel
-                                control={
-                                    <Checkbox
-                                        checked={activeFilters.includes(option)}
-                                        onChange={() => toggleFilter(option)}
-                                    />
-                                }
-                                label={option}
-                            />
-                        </ListItem>
-                    ))}
-                    </List>
-                </Box>
-            ))}
+            {/* Seção de Semestres */}
+            <Box>
+              <Typography variant="subtitle2" component="h3" fontWeight="bold">Semestre/Ano</Typography>
+              <List dense>
+                {semesters.map(option => (
+                  <ListItem key={option.value} disablePadding>
+                    <FormControlLabel
+                      control={<Checkbox checked={activeFilters.includes(option.value)} onChange={() => toggleFilter(option.value)} />}
+                      label={option.label}
+                    />
+                  </ListItem>
+                ))}
+              </List>
+            </Box>
+
+            {/* Seção de Tags */}
+            <Box>
+              <Typography variant="subtitle2" component="h3" fontWeight="bold">Tags</Typography>
+              <List dense>
+                {filterOptions.tags.map(option => (
+                  <ListItem key={option._id} disablePadding>
+                    <FormControlLabel
+                      control={<Checkbox checked={activeFilters.includes(option.name)} onChange={() => toggleFilter(option.name)} />}
+                      label={option.name}
+                    />
+                  </ListItem>
+                ))}
+              </List>
+            </Box>
+            
+            {/* Seção de Professores */}
+            <Box>
+              <Typography variant="subtitle2" component="h3" fontWeight="bold">Professores</Typography>
+              <List dense>
+                {filterOptions.professors.map(option => (
+                  <ListItem key={option._id} disablePadding>
+                    <Avatar src={`http://localhost:8080`+option.avatarUrl} alt={option.name} sx={{ width: 24, height: 24, mr: 1 }} />
+                    <FormControlLabel
+                      control={<Checkbox checked={activeFilters.includes(option.name)} onChange={() => toggleFilter(option.name)} />}
+                      label={option.name}
+                    />
+                  </ListItem>
+                ))}
+              </List>
+            </Box>
           </Stack>
 
           <Button onClick={clearFilters} variant="outlined" fullWidth sx={{ mt: 4 }}>
@@ -277,6 +359,7 @@ export default function ExplorePage() {
           </Button>
         </Box>
       </Drawer>
+
     </Container>
   );
 }

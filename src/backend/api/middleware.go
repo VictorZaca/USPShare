@@ -6,8 +6,10 @@ import (
 	"net/http"
 	"strings"
 	"uspshare/config"
+	"uspshare/store"
 
 	"github.com/golang-jwt/jwt/v5"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 // Criamos um tipo customizado para a chave do contexto para evitar colisões
@@ -54,5 +56,20 @@ func AuthMiddleware(next http.Handler) http.Handler {
 		ctx := context.WithValue(r.Context(), userContextKey, userId)
 		// Passa a requisição para o próximo handler com o novo contexto
 		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+func AdminMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		userIDHex, _ := r.Context().Value(userContextKey).(string)
+		userID, _ := primitive.ObjectIDFromHex(userIDHex)
+
+		user, err := store.GetUserByID(userID)
+		if err != nil || user.Role != "admin" {
+			writeJSON(w, http.StatusForbidden, map[string]string{"error": "Admin access required"})
+			return
+		}
+
+		next.ServeHTTP(w, r)
 	})
 }

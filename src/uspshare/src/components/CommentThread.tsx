@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useRef, FC, SyntheticEvent } from 'react';
-import { Paper, Stack, Avatar, Box, Typography, Button, TextField, Collapse } from '@mui/material';
+import { Paper, Stack, Avatar, Box, Typography, Button, TextField, Collapse, IconButton } from '@mui/material';
+import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
+import FavoriteIcon from '@mui/icons-material/Favorite';
 import { useAuth } from '../context/AuthContext';
+import { useCommentLikes } from '../context/CommentLikesContext';
 
 // A interface permanece a mesma, ela está correta.
 interface Comment {
@@ -9,6 +12,8 @@ interface Comment {
   createdAt: string;
   content: string;
   replies?: Comment[];
+  authorAvatar?: string; 
+  likes?: number;
 }
 
 interface CommentThreadProps {
@@ -24,6 +29,22 @@ export const CommentThread: FC<CommentThreadProps> = ({ comment, onReplySubmit, 
 
   const commentRef = useRef<HTMLDivElement>(null);
   const [isHighlighted, setIsHighlighted] = useState<boolean>(false);
+
+  const { hasLikedComment, toggleCommentLike } = useCommentLikes();
+  const [likes, setLikes] = useState<number>(comment.likes || 0);
+  
+  const isLikedByUser = hasLikedComment(comment.id);
+
+  const handleLikeClick = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // A função de toggle continua igual, mas não precisamos mais usar sua resposta
+    // para atualizar um estado local, pois a atualização da árvore inteira cuidará disso.
+    await toggleCommentLike(comment.id);
+    setLikes(prevLikes => isLikedByUser ? prevLikes - 1 : prevLikes + 1); 
+  };
+
+
 
   // A lógica de destaque e scroll permanece a mesma, ela está correta.
   useEffect(() => {
@@ -54,10 +75,7 @@ export const CommentThread: FC<CommentThreadProps> = ({ comment, onReplySubmit, 
     setShowReply(false);
   };
 
-  // --- LOG DE DEBUG PARA ESTE COMPONENTE ---
-  // Este log nos dirá exatamente o que cada instância do componente está recebendo.
-  // console.log(`Renderizando CommentThread para: ${comment.authorName} (${comment.id}). Respostas recebidas:`, comment.replies?.length || 0);
-
+  const backendUrl = 'http://localhost:8080'
 
   return (
     <Box ref={commentRef} id={comment.id}>
@@ -70,7 +88,13 @@ export const CommentThread: FC<CommentThreadProps> = ({ comment, onReplySubmit, 
         }}
       >
         <Stack direction="row" spacing={2} alignItems="flex-start">
-          <Avatar sx={{ width: 32, height: 32 }} />
+        <Avatar 
+            sx={{ width: 32, height: 32 }}
+            src={comment.authorAvatar ? `${backendUrl}${comment.authorAvatar}` : undefined}
+          >
+            {/* Fallback: mostra a primeira letra do nome se não houver imagem */}
+            {comment.authorName.charAt(0)}
+          </Avatar>
           <Box flexGrow={1}>
             <Typography component="span" variant="subtitle2" sx={{ mr: 1 }}>{comment.authorName}</Typography>
             <Typography component="span" variant="caption" color="text.secondary">
@@ -81,11 +105,16 @@ export const CommentThread: FC<CommentThreadProps> = ({ comment, onReplySubmit, 
         </Stack>
 
         {isAuthenticated && (
-          <Box textAlign="right" sx={{ mt: -1 }}>
-             <Button size="small" onClick={() => setShowReply(!showReply)}>
-              {showReply ? 'Cancelar' : 'Responder'}
-            </Button>
-          </Box>
+          <Stack direction="row" spacing={2} alignItems="center" sx={{ mt: 1 }}>
+            {/* Botão de Like de Comentário */}
+            <IconButton size="small" onClick={handleLikeClick} sx={{p:0.5}}>
+                {isLikedByUser ? <FavoriteIcon color="error" sx={{fontSize: 16}} /> : <FavoriteBorderIcon sx={{fontSize: 16}} />}
+            </IconButton>
+            <Typography variant="body2" color="text.secondary">{likes}</Typography>
+            
+            {/* Botão de Resposta */}
+          <Button size="small" onClick={() => setShowReply(!showReply)}>{showReply ? 'Cancelar' : 'Responder'}</Button>
+          </Stack>
         )}
 
         <Collapse in={showReply} timeout="auto" unmountOnExit>

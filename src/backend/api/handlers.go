@@ -1,11 +1,14 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"log"
 	"net/http"
 	"time"
+	"uspshare/badge"
 	"uspshare/config"
+	"uspshare/database"
 	"uspshare/models"
 	"uspshare/store"
 
@@ -15,9 +18,11 @@ import (
 
 	"github.com/google/uuid"
 
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"golang.org/x/crypto/bcrypt"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/golang-jwt/jwt/v5"
@@ -145,23 +150,38 @@ func HandleGetProfile(w http.ResponseWriter, r *http.Request) {
 	}
 	userID, _ := primitive.ObjectIDFromHex(userIDHex)
 
+	// 1. Busca os dados principais do usuário (que agora incluem bio, curso, avatarUrl, etc.)
 	user, err := store.GetUserByID(userID)
 	if err != nil {
 		writeJSON(w, http.StatusNotFound, map[string]string{"error": "User not found"})
 		return
 	}
 
+	// 2. Busca as estatísticas reais que já implementamos
 	uploadsCount, _ := store.CountUserUploads(userID)
+	commentsCount, _ := store.CountUserComments(userID)
 
-	// Preenche os dados
-	user.AvatarURL = "https://i.pravatar.cc/150?u=" + user.Email
-	user.Bio = "Estudante da USP. Bio a ser preenchida."
-	user.Course = "Engenharia (a ser preenchido)"
-	user.Faculty = "Instituto (a ser preenchido)"
-	user.YearJoined = "2022"
-	user.Badges = []string{"Novo Membro"}
-	user.Stats = models.UserStats{Uploads: int(uploadsCount), Likes: 0, Comments: 0, Reputation: 10}
+	// 3. Monta o objeto de estatísticas
+	// Removemos os dados mockados e confiamos nos dados do banco.
+	// Likes e Reputation continuam como placeholder por enquanto.
+	user.Stats = models.UserStats{
+		Uploads:    int(uploadsCount),
+		Likes:      0, // TODO: Implementar lógica de contagem de likes
+		Comments:   int(commentsCount),
+		Reputation: 0, // TODO: Implementar lógica de reputação
+	}
 
+	earnedBadges := badge.EvaluateBadges(user.Stats)
+	// 3. Atribui a lista de badges conquistadas ao objeto do usuário
+	user.Badges = earnedBadges
+
+	// Se o usuário ainda não tiver um avatar, podemos definir um padrão aqui
+	if user.AvatarURL == "" {
+		// Isso pode ser uma URL de um avatar padrão no seu frontend ou um serviço externo
+		user.AvatarURL = "https://i.pravatar.cc/150?u=" + user.Email
+	}
+
+	// 4. Envia o objeto 'user' completo, com os dados reais do banco.
 	writeJSON(w, http.StatusOK, user)
 }
 
@@ -240,7 +260,6 @@ func HandleUploadResource(w http.ResponseWriter, r *http.Request) {
 		Course:      r.FormValue("course"),
 		CourseCode:  r.FormValue("courseCode"),
 		Type:        r.FormValue("fileType"),
-		Professor:   r.FormValue("professor"),
 		Semester:    r.FormValue("semester"),
 		IsAnonymous: r.FormValue("isAnonymous") == "true",
 		Tags:        tags,
@@ -248,6 +267,13 @@ func HandleUploadResource(w http.ResponseWriter, r *http.Request) {
 		FileUrl:     "/" + filePath,
 		UploadDate:  time.Now(),
 		Likes:       0,
+	}
+	professorIDHex := r.FormValue("professorId")
+	if professorIDHex != "" {
+		profID, err := primitive.ObjectIDFromHex(professorIDHex)
+		if err == nil {
+			resource.ProfessorID = &profID
+		}
 	}
 
 	// 7. Salvar os metadados no MongoDB (você precisará criar a função store.CreateResource)
@@ -431,4 +457,478 @@ func HandleMarkNotificationAsRead(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, map[string]string{"message": "Notification marked as read"})
+}
+
+func HandleUpdateProfile(w http.ResponseWriter, r *http.Request) {
+	userIDHex, _ := r.Context().Value(userContextKey).(string)
+	userID, _ := primitive.ObjectIDFromHex(userIDHex)
+
+	var req struct {
+		Name    string `json:"name"`
+		Course  string `json:"course"`
+		Faculty string `json:"faculty"`
+		Bio     string `json:"bio"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid request body"})
+		return
+	}
+
+	log.Printf("Atualizando perfil do usuário %s: %+v", userIDHex, req)
+
+	update := bson.M{
+		"$set": bson.M{
+			"name":    req.Name,
+			"course":  req.Course,
+			"faculty": req.Faculty,
+			"bio":     req.Bio,
+		},
+	}
+
+	if err := store.UpdateUserByID(userID, update); err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to update profile"})
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]string{"message": "Profile updated successfully"})
+}
+
+// HandleUpdateAvatar lida com o upload da imagem de avatar do usuário.
+func HandleUpdateAvatar(w http.ResponseWriter, r *http.Request) {
+	userIDHex, _ := r.Context().Value(userContextKey).(string)
+	userID, _ := primitive.ObjectIDFromHex(userIDHex)
+
+	r.ParseMultipartForm(2 << 20) // Limite de 2MB
+	file, handler, err := r.FormFile("avatar")
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid avatar file field"})
+		return
+	}
+	defer file.Close()
+
+	// Salva o avatar em uma subpasta para organização
+	avatarFileName := userID.Hex() + filepath.Ext(handler.Filename)
+	avatarPath := filepath.Join("uploads", "avatars", avatarFileName)
+
+	// Garante que o diretório de avatares exista
+	os.MkdirAll(filepath.Dir(avatarPath), os.ModePerm)
+
+	dst, _ := os.Create(avatarPath)
+	defer dst.Close()
+	io.Copy(dst, file)
+
+	avatarUrl := "/uploads/avatars/" + avatarFileName
+
+	// Atualiza a URL do avatar no banco de dados
+	update := bson.M{"$set": bson.M{"avatarUrl": avatarUrl}}
+	if err := store.UpdateUserByID(userID, update); err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to update avatar URL"})
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]string{"avatarUrl": avatarUrl})
+}
+
+func HandleGetTags(w http.ResponseWriter, r *http.Request) {
+	tags, err := store.GetDistinctFieldValues("tags")
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to fetch tags"})
+		return
+	}
+	writeJSON(w, http.StatusOK, tags)
+}
+
+func HandleListTags(w http.ResponseWriter, r *http.Request) {
+	tags, err := store.ListTags()
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to fetch tags"})
+		return
+	}
+	writeJSON(w, http.StatusOK, tags)
+}
+
+func HandleCreateTag(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Name string `json:"name"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Name == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Tag name is required"})
+		return
+	}
+	tag := models.Tag{ID: primitive.NewObjectID(), Name: req.Name}
+	if err := store.CreateTag(&tag); err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to create tag"})
+		return
+	}
+	writeJSON(w, http.StatusCreated, tag)
+}
+
+func HandleDeleteTag(w http.ResponseWriter, r *http.Request) {
+	id, _ := primitive.ObjectIDFromHex(chi.URLParam(r, "id"))
+	if err := store.DeleteTagByID(id); err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to delete tag"})
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"message": "Tag deleted successfully"})
+}
+
+// --- Handlers para Courses ---
+
+func HandleListCourses(w http.ResponseWriter, r *http.Request) {
+	courses, err := store.ListCourses()
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to fetch courses"})
+		return
+	}
+	writeJSON(w, http.StatusOK, courses)
+}
+
+func HandleCreateCourse(w http.ResponseWriter, r *http.Request) {
+	var req models.Course
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Name == "" || req.Code == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Course name and code are required"})
+		return
+	}
+	req.ID = primitive.NewObjectID()
+	if err := store.CreateCourse(&req); err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to create course"})
+		return
+	}
+	writeJSON(w, http.StatusCreated, req)
+}
+
+func HandleDeleteCourse(w http.ResponseWriter, r *http.Request) {
+	id, _ := primitive.ObjectIDFromHex(chi.URLParam(r, "id"))
+	if err := store.DeleteCourseByID(id); err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to delete course"})
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"message": "Course deleted successfully"})
+}
+
+// --- Handlers para Professors ---
+
+func HandleListProfessors(w http.ResponseWriter, r *http.Request) {
+	profs, err := store.ListProfessors()
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to fetch professors"})
+		return
+	}
+	writeJSON(w, http.StatusOK, profs)
+}
+
+func HandleCreateProfessor(w http.ResponseWriter, r *http.Request) {
+	if err := r.ParseMultipartForm(2 << 20); err != nil { // Limite de 2MB
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Request too large"})
+		return
+	}
+	name := r.FormValue("name")
+	if name == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Professor name is required"})
+		return
+	}
+	professor := models.Professor{ID: primitive.NewObjectID(), Name: name}
+	file, handler, err := r.FormFile("avatar")
+	if err == nil {
+		defer file.Close()
+		avatarFileName := professor.ID.Hex() + filepath.Ext(handler.Filename)
+		avatarPath := filepath.Join("uploads", "avatars", avatarFileName)
+		os.MkdirAll(filepath.Dir(avatarPath), os.ModePerm)
+		dst, _ := os.Create(avatarPath)
+		defer dst.Close()
+		io.Copy(dst, file)
+		professor.AvatarURL = "/uploads/avatars/" + avatarFileName
+	}
+	if err := store.CreateProfessor(&professor); err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to create professor"})
+		return
+	}
+	writeJSON(w, http.StatusCreated, professor)
+}
+
+func HandleDeleteProfessor(w http.ResponseWriter, r *http.Request) {
+	id, _ := primitive.ObjectIDFromHex(chi.URLParam(r, "id"))
+	// Bônus: aqui você também poderia deletar o arquivo de imagem do avatar do sistema de arquivos.
+	if err := store.DeleteProfessorByID(id); err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to delete professor"})
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"message": "Professor deleted successfully"})
+}
+
+func HandleSearchUsers(w http.ResponseWriter, r *http.Request) {
+	// Pega o termo de busca da query string (ex: /api/users/search?q=enzo)
+	query := r.URL.Query().Get("q")
+
+	userIDHex, _ := r.Context().Value(userContextKey).(string)
+	userID, _ := primitive.ObjectIDFromHex(userIDHex)
+
+	users, err := store.SearchUsersByNameOrEmail(query, userID)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to search users"})
+		return
+	}
+
+	writeJSON(w, http.StatusOK, users)
+}
+
+// HandleShareResource cria a notificação de compartilhamento.
+func HandleShareResource(w http.ResponseWriter, r *http.Request) {
+	senderIDHex, _ := r.Context().Value(userContextKey).(string)
+	senderID, _ := primitive.ObjectIDFromHex(senderIDHex)
+
+	resourceIDHex := chi.URLParam(r, "id")
+	resourceID, _ := primitive.ObjectIDFromHex(resourceIDHex)
+
+	var req struct {
+		RecipientID string `json:"recipientId"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid request"})
+		return
+	}
+	recipientID, _ := primitive.ObjectIDFromHex(req.RecipientID)
+
+	// Busca os dados necessários para criar a notificação
+	sender, _ := store.GetUserByID(senderID)
+	resource, _ := store.GetResourceByID(resourceID) // Usamos a GetResourceByID que retorna bson.M
+
+	notification := models.Notification{
+		ID:         primitive.NewObjectID(),
+		UserID:     recipientID, // A notificação é PARA o destinatário
+		ActorName:  sender.Name, // O ator é quem enviou
+		Type:       "share",
+		Message:    "compartilhou o material '" + resource["title"].(string) + "' com você.",
+		ResourceID: resourceID,
+		CommentID:  primitive.NilObjectID, // Não há comentário associado
+		IsRead:     false,
+		CreatedAt:  time.Now(),
+	}
+
+	if err := store.CreateNotification(&notification); err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to create share notification"})
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]string{"message": "Material shared successfully"})
+}
+
+func HandleToggleLike(w http.ResponseWriter, r *http.Request) {
+	userID, _ := primitive.ObjectIDFromHex(r.Context().Value(userContextKey).(string))
+	resourceID, _ := primitive.ObjectIDFromHex(chi.URLParam(r, "id"))
+
+	hasLiked, err := store.HasUserLikedResource(userID, resourceID)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Error checking like status"})
+		return
+	}
+
+	if hasLiked {
+		// Se já curtiu, descurte.
+		store.DeleteLike(userID, resourceID)
+	} else {
+		// Se não curtiu, cria o like.
+		like := models.Like{
+			ID:         primitive.NewObjectID(),
+			UserID:     userID,
+			ResourceID: resourceID,
+			CreatedAt:  time.Now(),
+		}
+		if err := store.CreateLike(&like); err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to like resource"})
+			return
+		}
+
+		// Tenta buscar os dados do recurso para encontrar o autor.
+		resourceData, err := store.GetResourceByID(resourceID)
+		if err == nil && resourceData != nil {
+
+			// 1. Verifica se o campo 'uploaderInfo' existe E se ele é do tipo correto.
+			if uploaderInfo, ok := resourceData["uploaderInfo"].(primitive.M); ok && uploaderInfo != nil {
+
+				// 2. Verifica se o campo '_id' existe dentro do uploaderInfo.
+				if resourceAuthorID, ok := uploaderInfo["_id"].(primitive.ObjectID); ok {
+
+					// 3. Garante que o usuário não está curtindo o próprio material.
+					if resourceAuthorID != userID {
+						sender, _ := store.GetUserByID(userID) // Busca o nome de quem curtiu
+						if sender != nil {
+							notification := models.Notification{
+								ID:         primitive.NewObjectID(),
+								UserID:     resourceAuthorID,
+								ActorName:  sender.Name,
+								Type:       "like",
+								Message:    "curtiu seu material '" + resourceData["title"].(string) + "'.",
+								ResourceID: resourceID,
+								IsRead:     false,
+								CreatedAt:  time.Now(),
+							}
+							store.CreateNotification(&notification)
+						}
+					}
+				}
+			}
+		} else {
+			log.Printf("Aviso: não foi possível buscar dados do recurso %s para enviar notificação de like.", resourceID.Hex())
+		}
+	}
+
+	// Retorna o novo estado e contagem de likes
+	newLikeCount, _ := store.CountLikesForResource(resourceID)
+	writeJSON(w, http.StatusOK, map[string]interface{}{
+		"likes":    newLikeCount,
+		"hasLiked": !hasLiked,
+	})
+}
+
+func HandleGetMyLikes(w http.ResponseWriter, r *http.Request) {
+	userID, _ := primitive.ObjectIDFromHex(r.Context().Value(userContextKey).(string))
+	likedIDs, err := store.GetUserLikedResourceIDs(userID)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to fetch user likes"})
+		return
+	}
+	writeJSON(w, http.StatusOK, likedIDs)
+}
+
+func HandleToggleCommentLike(w http.ResponseWriter, r *http.Request) {
+	userID, _ := primitive.ObjectIDFromHex(r.Context().Value(userContextKey).(string))
+	commentID, _ := primitive.ObjectIDFromHex(chi.URLParam(r, "id"))
+
+	hasLiked, _ := store.HasUserLikedComment(userID, commentID)
+
+	if hasLiked {
+		store.UnlikeComment(userID, commentID)
+	} else {
+		like := models.CommentLike{
+			ID:        primitive.NewObjectID(),
+			UserID:    userID,
+			CommentID: commentID,
+			CreatedAt: time.Now(),
+		}
+		store.LikeComment(&like)
+
+		// Lógica para notificar o autor do comentário (não de si mesmo)
+		comment, _ := store.GetCommentByID(commentID)
+		if comment != nil && comment.UserID != userID {
+			sender, _ := store.GetUserByID(userID)
+			notification := models.Notification{
+				// ... (preencha a notificação do tipo 'comment_like')
+				ID:         primitive.NewObjectID(),
+				UserID:     comment.UserID,
+				ActorName:  sender.Name,
+				Type:       "comment_like",
+				Message:    "curtiu seu comentário.",
+				ResourceID: comment.ResourceID,
+				CommentID:  comment.ID,
+				IsRead:     false,
+				CreatedAt:  time.Now(),
+			}
+			store.CreateNotification(&notification)
+		}
+	}
+
+	newLikeCount, _ := store.CountLikesForComment(commentID)
+	writeJSON(w, http.StatusOK, map[string]interface{}{
+		"likes":    newLikeCount,
+		"hasLiked": !hasLiked,
+	})
+}
+
+// HandleGetMyCommentLikes retorna os IDs de todos os comentários que o usuário curtiu.
+func HandleGetMyCommentLikes(w http.ResponseWriter, r *http.Request) {
+	userID, _ := primitive.ObjectIDFromHex(r.Context().Value(userContextKey).(string))
+	likedIDs, err := store.GetUserLikedCommentIDs(userID)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to fetch user comment likes"})
+		return
+	}
+	writeJSON(w, http.StatusOK, likedIDs)
+}
+
+func HandleGetRelatedResources(w http.ResponseWriter, r *http.Request) {
+	resourceID, _ := primitive.ObjectIDFromHex(chi.URLParam(r, "id"))
+
+	// 1. Primeiro, busca o recurso atual para descobrir o código da disciplina.
+	currentResource, err := store.GetResourceByID(resourceID) // Usamos a função que já retorna bson.M
+	if err != nil {
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "Resource not found"})
+		return
+	}
+
+	courseCode, ok := currentResource["courseCode"].(string)
+	if !ok {
+		writeJSON(w, http.StatusOK, []models.Resource{}) // Retorna lista vazia se não tiver courseCode
+		return
+	}
+
+	// 2. Agora, busca os recursos relacionados.
+	relatedResources, err := store.FindRelatedResources(courseCode, resourceID)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to fetch related resources"})
+		return
+	}
+
+	writeJSON(w, http.StatusOK, relatedResources)
+}
+
+func HandleGetStats(w http.ResponseWriter, r *http.Request) {
+	// Usamos um 'error group' para buscar todas as contagens em paralelo, por performance.
+	var g errgroup.Group
+
+	var userCount, resourceCount, courseCount int64
+
+	g.Go(func() error {
+		count, err := database.UserCollection.CountDocuments(context.Background(), bson.M{})
+		userCount = count
+		return err
+	})
+	g.Go(func() error {
+		count, err := database.ResourceCollection.CountDocuments(context.Background(), bson.M{})
+		resourceCount = count
+		return err
+	})
+	g.Go(func() error {
+		// Contar cursos distintos é um pouco diferente
+		distinctCourses, err := database.CourseCollection.Distinct(context.Background(), "code", bson.M{})
+		courseCount = int64(len(distinctCourses))
+		return err
+	})
+
+	if err := g.Wait(); err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to fetch stats"})
+		return
+	}
+
+	// O número de downloads seria uma lógica mais complexa (ex: uma coleção 'downloads').
+	// Por enquanto, vamos retornar um número mockado para esta estatística.
+	stats := map[string]int64{
+		"users":     userCount,
+		"resources": resourceCount,
+		"courses":   courseCount,
+		"downloads": 25000, // Mock
+	}
+
+	writeJSON(w, http.StatusOK, stats)
+}
+
+func HandleDeleteResource(w http.ResponseWriter, r *http.Request) {
+	userID, _ := primitive.ObjectIDFromHex(r.Context().Value(userContextKey).(string))
+	resourceID, _ := primitive.ObjectIDFromHex(chi.URLParam(r, "id"))
+
+	// A função no store já contém a lógica para garantir que o usuário é o dono.
+	err := store.DeleteResourceByID(resourceID, userID)
+
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			// Isso acontece se o usuário tentar deletar um recurso que não é dele ou não existe.
+			writeJSON(w, http.StatusForbidden, map[string]string{"error": "Permission denied or resource not found"})
+			return
+		}
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to delete resource"})
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]string{"message": "Resource deleted successfully"})
 }

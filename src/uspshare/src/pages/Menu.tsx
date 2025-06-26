@@ -299,15 +299,35 @@ export default function Navbar() {
               </Menu>
 
               <IconButton onClick={handleOpenUserMenu}>
-                <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main' }}>
+                 <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main' }} src={user?.avatar ? `http://localhost:8080${user.avatar}` : ''}>
                   {user?.initial}
                 </Avatar>
               </IconButton>
+
+              {/* --- MENU DE USUÁRIO ATUALIZADO --- */}
               <Menu
                 anchorEl={anchorElUser}
                 open={Boolean(anchorElUser)}
                 onClose={handleCloseUserMenu}
+                sx={{ mt: 1.5 }}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                transformOrigin={{ vertical: 'top', horizontal: 'right' }}
               >
+                {/* Cabeçalho do Menu com Avatar e Info */}
+                <Box sx={{ px: 2, py: 1.5 }}>
+                  <Stack direction="row" spacing={2} alignItems="center">
+                    <Avatar src={user?.avatar ? `http://localhost:8080${user.avatar}` : ''} sx={{ width: 40, height: 40 }}>
+                      {user?.initial}
+                    </Avatar>
+                    <Box>
+                      <Typography variant="body1" fontWeight="bold">{user?.name}</Typography>
+                      <Typography variant="body2" color="text.secondary">{user?.email}</Typography>
+                    </Box>
+                  </Stack>
+                </Box>
+                <Divider />
+
+                {/* Itens do Menu */}
                 <MenuItem component={RouterLink} to="/profile" onClick={handleCloseUserMenu}>
                     <ListItemIcon><AccountCircleOutlinedIcon fontSize="small"/></ListItemIcon>
                     <ListItemText>Meu Perfil</ListItemText>
@@ -322,6 +342,7 @@ export default function Navbar() {
                     <ListItemText sx={{color: 'error.main'}}>Sair</ListItemText>
                 </MenuItem>
               </Menu>
+
             </>
           ) : (
             <Button

@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { Link as RouterLink } from "react-router-dom";
 import {
   Container,
@@ -25,10 +25,12 @@ import {
   Chip,
   Paper,
   IconButton,
+  Avatar,
 } from "@mui/material";
 import { LoadingButton } from "@mui/lab";
 
 import apiClient from "../api/axios";
+import useDebounce from "../hooks/useDebounce"
 
 // Material-UI Icons
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
@@ -36,12 +38,29 @@ import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import ClearIcon from "@mui/icons-material/Clear";
 import InsertDriveFileOutlinedIcon from '@mui/icons-material/InsertDriveFileOutlined';
+import { Navigate } from "react-router-dom";
 
 // --- A more advanced File Uploader Component ---
 interface FileDropzoneProps {
   onFileSelect: (file: File) => void;
   selectedFile: File | null;
   onFileClear: () => void;
+}
+
+interface CourseOption {
+  code: string;
+  name: string;
+}
+
+interface ProfessorOption {
+  id: string;
+  name: string;
+  avatarUrl?: string;
+}
+
+interface TagOption {
+  id: string;
+  name: string;
 }
 
 const FileDropzone: React.FC<FileDropzoneProps> = ({ onFileSelect, selectedFile, onFileClear }) => {
@@ -115,18 +134,54 @@ const FileDropzone: React.FC<FileDropzoneProps> = ({ onFileSelect, selectedFile,
 export default function UploadPage() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [descriptionInput, setDescriptionInput] = useState("");
+
   const [course, setCourse] = useState("");
   const [courseCode, setCourseCode] = useState("");
-  const [professor, setProfessor] = useState("");
+  const [professor, setProfessor] = useState<{ id: string; name: string; avatarUrl?: string } | null>(null);
   const [fileType, setFileType] = useState("");
   const [semester, setSemester] = useState("");
   const [isAnonymous, setIsAnonymous] =useState(false);
   const [tags, setTags] = useState<string[]>([]);
   const [file, setFile] = useState<File | null>(null);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [uploadedFileId, setUploadedFileId] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
 
   const [error, setError] = useState<string | null>(null); // Estado para erros
+
+  const [courseOptions, setCourseOptions] = useState<CourseOption[]>([]);
+  const [professorOptions, setProfessorOptions] = useState<ProfessorOption[]>([]);
+  const [tagOptions, setTagOptions] = useState<TagOption[]>([]);
+  const [isLoadingOptions, setIsLoadingOptions] = useState(true);
+
+  const debouncedDescription = useDebounce(descriptionInput, 500);
+
+  useEffect(() => {
+    setDescription(debouncedDescription);
+  }, [debouncedDescription]);
+
+
+  useEffect(() => {
+    const fetchOptions = async () => {
+      try {
+        setIsLoadingOptions(true);
+        const [coursesRes, professorsRes, tagsRes] = await Promise.all([
+          apiClient.get('/api/data/courses'),
+          apiClient.get('/api/data/professors'),
+          apiClient.get('/api/data/tags')
+        ]);
+        setCourseOptions(coursesRes.data || []);
+        setProfessorOptions(professorsRes.data || []);
+        setTagOptions(tagsRes.data || []);
+      } catch (error) {
+        console.error("Failed to fetch form options:", error);
+      } finally {
+        setIsLoadingOptions(false);
+      }
+    };
+    fetchOptions();
+  }, []);
 
   const handleSubmit = async (e: { preventDefault: () => void; }) => {
     e.preventDefault();
@@ -150,17 +205,20 @@ export default function UploadPage() {
     formData.append("description", description);
     formData.append("course", course);
     formData.append("courseCode", courseCode);
-    formData.append("professor", professor);
     formData.append("fileType", fileType);
     formData.append("semester", semester);
     formData.append("isAnonymous", isAnonymous.toString());
     formData.append("tags", JSON.stringify(tags)); // Enviamos o array de tags como uma string JSON
 
+    if (professor) {
+      formData.append("professorId", professor.id);
+    }
     try {
       // 3. Enviar o FormData para o endpoint de upload protegido
       // Axios vai configurar o 'Content-Type: multipart/form-data' automaticamente
-      await apiClient.post("/api/upload", formData);
+      const response = await apiClient.post("/api/upload", formData);
       
+      setUploadedFileId(response.data.id);
       setIsSubmitted(true); // Mostra a tela de sucesso
     } 
     catch (err)
@@ -176,14 +234,7 @@ export default function UploadPage() {
   };
   
   if (isSubmitted) {
-    return (
-      <Container maxWidth="md" sx={{ py: 8 }}>
-        <Alert severity="success" icon={<CheckCircleOutlineIcon fontSize="inherit" />} sx={{ p: 3 }}>
-          <AlertTitle sx={{ fontWeight: 'bold' }}>Material enviado com sucesso!</AlertTitle>
-          Obrigado por contribuir! Seu material será revisado e estará disponível em breve.
-        </Alert>
-      </Container>
-    );
+      return <Navigate replace to={`/file/${uploadedFileId}`} />;
   }
 
   return (
@@ -220,12 +271,51 @@ export default function UploadPage() {
                 </Grid>
               </Grid>
 
-              <TextField label="Descrição" multiline rows={3} fullWidth value={description} onChange={(e) => setDescription(e.target.value)} />
+              <TextField
+                label="Descrição"
+                multiline
+                rows={3}
+                fullWidth
+                value={descriptionInput}
+                onChange={(e) => setDescriptionInput(e.target.value)}
+              />
 
               <Grid container spacing={3}>
-                <Grid size={{xs: 12, md: 6}}><TextField fullWidth required label="Nome da Disciplina" value={course} onChange={(e) => setCourse(e.target.value)} /></Grid>
-                <Grid size={{xs: 12, md: 6}}><TextField fullWidth required label="Código da Disciplina" value={courseCode} onChange={(e) => setCourseCode(e.target.value)} /></Grid>
-                <Grid size={{xs: 12, md: 6}}><TextField fullWidth label="Professor" value={professor} onChange={(e) => setProfessor(e.target.value)} /></Grid>
+                <Grid size={{xs: 12, md: 6}}>
+                  <Autocomplete
+                    options={courseOptions}
+                    getOptionLabel={(option) => `${option.code} - ${option.name}`}
+                    onChange={(event, newValue) => {
+                      if (newValue) {
+                        setCourse(newValue.name);
+                        setCourseCode(newValue.code);
+                      } else {
+                        setCourse("");
+                        setCourseCode("");
+                      }
+                    }}
+                    renderInput={(params) => <TextField {...params} label="Disciplina*" required />}
+                    loading={isLoadingOptions}
+                  />
+                </Grid>
+                <Grid size={{xs: 12, md: 6}}>
+                <Autocomplete
+                    freeSolo
+                    options={professorOptions} 
+                    getOptionLabel={(option) => typeof option === 'string' ? option : option.name} // Mostra o nome no campo
+                    onChange={(event, newValue) => {
+                      setProfessor(newValue);
+                    }}
+                    renderOption={(props, option) => (
+                        <Box component="li" sx={{ '& > img': { mr: 2, flexShrink: 0 } }} {...props}>
+                            <Avatar src={`http://localhost:8080${option.avatarUrl}`} sx={{ mr: 1.5, width: 24, height: 24 }} />
+                            {option.name}
+                        </Box>
+                    )}
+                    renderInput={(params) => <TextField {...params} label="Professor" />}
+                    loading={isLoadingOptions}
+                />
+                </Grid>
                 <Grid size={{xs: 12, md: 6}}>
                      <FormControl fullWidth required>
                         <InputLabel id="semester-label">Semestre/Ano</InputLabel>
@@ -233,6 +323,28 @@ export default function UploadPage() {
                             <MenuItem value="2025-1">2025/1</MenuItem>
                             <MenuItem value="2024-2">2024/2</MenuItem>
                             <MenuItem value="2024-1">2024/1</MenuItem>
+                            <MenuItem value="2023-1">2023/1</MenuItem>
+                            <MenuItem value="2023-2">2023/2</MenuItem>
+                            <MenuItem value="2022-1">2022/1</MenuItem>
+                            <MenuItem value="2022-2">2022/2</MenuItem>
+                            <MenuItem value="2021-1">2021/1</MenuItem>
+                            <MenuItem value="2021-2">2021/2</MenuItem>
+                            <MenuItem value="2020-1">2020/1</MenuItem>
+                            <MenuItem value="2020-2">2020/2</MenuItem>
+                            <MenuItem value="2010-1">2019/1</MenuItem>
+                            <MenuItem value="2019-2">2019/2</MenuItem>
+                            <MenuItem value="2018-1">2018/1</MenuItem>
+                            <MenuItem value="2018-2">2018/2</MenuItem>
+                            <MenuItem value="2017-1">2017/1</MenuItem>
+                            <MenuItem value="2017-2">2017/2</MenuItem>
+                            <MenuItem value="2016-1">2016/1</MenuItem>
+                            <MenuItem value="2016-2">2016/2</MenuItem>
+                            <MenuItem value="2015-1">2015/1</MenuItem>
+                            <MenuItem value="2015-2">2015/2</MenuItem>
+                            <MenuItem value="2014-1">2014/1</MenuItem>
+                            <MenuItem value="2014-2">2014/2</MenuItem>
+                            <MenuItem value="2013-1">2013/1</MenuItem>
+                            <MenuItem value="2013-2">2013/2</MenuItem>
                         </Select>
                     </FormControl>
                  </Grid>
@@ -240,29 +352,24 @@ export default function UploadPage() {
 
               <Autocomplete
                 multiple
-                freeSolo // Permite que o usuário digite valores que não estão na lista de opções
+                freeSolo
                 id="tags-input"
-                options={[]} // Não temos sugestões pré-definidas, então é um array vazio
-                value={tags} // O valor do componente é controlado pelo nosso estado 'tags'
+                options={tagOptions}
+                value={tags}
+
+                getOptionLabel={(option) => typeof option === 'string' ? option : option.name} 
                 onChange={(event, newValue) => {
-                  // Esta função é chamada quando uma tag é adicionada (com Enter) ou removida.
-                  // 'newValue' é o novo array de tags.
-                  setTags(newValue);
+                  const uniqueTags = [...new Set(newValue.map(tag => typeof tag === 'string' ? tag.trim() : tag.name.trim()).filter(Boolean))];                  
+                  setTags(uniqueTags);
                 }}
-                renderValue={(value, getTagProps) =>
-                  value.map((option, index) => (
-                    <Chip variant="outlined" label={option} {...getTagProps({ index })} />
-                  ))
-                }
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    label="Tags"
-                    // --- MUDANÇA PRINCIPAL AQUI (DICA PARA O USUÁRIO) ---
-                    placeholder="Adicione tags e pressione Enter"
-                  />
-                )}
+
+                renderValue={(value, getTagProps) => value.map((option, index) => (
+                    <Chip variant="outlined" label={typeof option === 'string' ? option : option.name} {...getTagProps({ index })} />
+                ))}
+                renderInput={(params) => <TextField {...params} label="Tags" placeholder="Adicione ou selecione tags" />}
+                loading={isLoadingOptions}
               />
+
 
               
               <FormControlLabel

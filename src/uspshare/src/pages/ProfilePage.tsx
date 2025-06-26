@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, ChangeEvent } from "react";
 import { Link as RouterLink } from "react-router-dom";
 import {
   Container,
@@ -15,7 +15,12 @@ import {
   Stack,
   Paper,
   CircularProgress,
-  Alert
+  Alert,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  TextField,
+  DialogActions
 } from "@mui/material";
 
 // Ícones do Material-UI
@@ -28,11 +33,13 @@ import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
 import BookmarkBorderOutlinedIcon from "@mui/icons-material/BookmarkBorderOutlined";
 import HistoryIcon from "@mui/icons-material/History";
 import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
-import MenuBookOutlinedIcon from "@mui/icons-material/MenuBookOutlined";
+import StarBorderIcon from '@mui/icons-material/StarBorder';
+import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 
 // Ferramentas para integração com a API e Auth
 import apiClient from "../api/axios"; // Nosso cliente de API configurado
 import { useAuth } from "../context/AuthContext"; // Nosso hook de autenticação
+import { LoadingButton } from "@mui/lab";
 
 // --- Componentes de Apoio (Placeholders) ---
 
@@ -53,7 +60,6 @@ const FileCard: React.FC<FileCardProps> = ({ file }) => (
     <CardContent>
       <Typography variant="h6" gutterBottom noWrap>{file.title || file.fileName}</Typography>
       <Typography variant="body2" color="text.secondary">{file.courseCode}</Typography>
-      <Button size="small" sx={{ mt: 2 }}>Ver Material</Button>
     </CardContent>
   </Card>
 );
@@ -69,19 +75,23 @@ const ProfileActivity = () => (
 
 // Componente para a aba "Configurações"
 interface Profile {
+  id: string;
   name: string;
-  avatar: string;
-  course: string;
-  faculty: string;
-  yearJoined: string | number;
-  badges: string[];
-  stats: {
+  email: string;
+  initial: string;
+  avatarUrl?: string;
+  avatar?: string;
+  course?: string;
+  faculty?: string;
+  yearJoined?: string;
+  bio?: string;
+  badges?: string[];
+  stats?: {
     uploads: number;
     likes: number;
     comments: number;
     reputation: number;
   };
-  bio: string;
 }
 
 const ProfileSettings = ({ user }: { user: Profile }) => (
@@ -102,50 +112,124 @@ function TabPanel(props: { [x: string]: any; children: any; value: any; index: a
   );
 }
 
+interface EditProfileModalProps {
+  open: boolean;
+  onClose: () => void;
+  profile: Profile;
+  onSave: (formData: Profile, avatarFile: File | null) => Promise<void>;
+}
+
+const EditProfileModal: React.FC<EditProfileModalProps> = ({ open, onClose, profile, onSave }) => {
+  const [formData, setFormData] = useState(profile);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    setFormData(profile); // Atualiza o form se o perfil mudar
+  }, [profile]);
+
+  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+  
+  const handleAvatarChange = (e: ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setAvatarFile(e.target.files[0]);
+    }
+  };
+
+  const handleSaveChanges = async () => {
+    setIsSaving(true);
+    await onSave(formData, avatarFile);
+    setIsSaving(false);
+    onClose();
+  };
+
+  return (
+    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
+      <DialogTitle>Editar Perfil</DialogTitle>
+      <DialogContent>
+        <Stack spacing={3} sx={{ pt: 1 }}>
+          <Stack direction="row" spacing={2} alignItems="center">
+            <Avatar src={avatarFile ? URL.createObjectURL(avatarFile) : `http://localhost:8080${profile.avatar}`} sx={{ width: 80, height: 80 }} />
+            <Button variant="outlined" component="label">
+              Trocar Imagem
+              <input type="file" hidden accept="image/*" onChange={handleAvatarChange} />
+            </Button>
+          </Stack>
+          <TextField name="name" label="Nome Completo" value={formData.name} onChange={handleChange} />
+          <TextField name="course" label="Curso" value={formData.course} onChange={handleChange} />
+          <TextField name="faculty" label="Instituto/Faculdade" value={formData.faculty} onChange={handleChange} />
+          <TextField name="bio" label="Bio" multiline rows={3} value={formData.bio} onChange={handleChange} />
+        </Stack>
+      </DialogContent>
+      <DialogActions sx={{ p: '0 24px 16px' }}>
+        <Button onClick={onClose}>Cancelar</Button>
+        <LoadingButton onClick={handleSaveChanges} variant="contained" loading={isSaving}>
+          Salvar Alterações
+        </LoadingButton>
+      </DialogActions>
+    </Dialog>
+  );
+};
+
+
 // --- Componente Principal da Página de Perfil ---
 
 export default function ProfilePage() {
   const [tabValue, setTabValue] = useState("uploads");
+  const [isEditModalOpen, setEditModalOpen] = useState(false);
 
-  // Estados para os dados da API, loading e erros
-  const [profile, setProfile] = useState<Profile | null>(null);
+  // --- MUDANÇA PRINCIPAL: Usamos o 'user' e 'refreshUser' diretamente do contexto ---
+  // Renomeamos 'user' para 'profile' para manter a consistência do JSX.
+  const { user: profile, refreshUser, loading: authLoading } = useAuth();
+  
+  // O estado de 'uploads' continua local, pois pertence apenas a esta página.
   const [uploads, setUploads] = useState<FileData[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const authContext = useAuth();
-  const isAuthenticated = authContext ? authContext.isAuthenticated : false;
+  const [loadingUploads, setLoadingUploads] = useState(true);
 
-  // Efeito para buscar os dados quando o componente é montado
+  // --- MUDANÇA NO useEffect: Ele agora só busca os uploads ---
+  // A busca do perfil é gerenciada pelo AuthContext.
   useEffect(() => {
-    const fetchProfileData = async () => {
-      // Se o usuário não estiver logado, não há perfil para buscar
-      if (!isAuthenticated) {
-        setError("Você precisa estar logado para ver um perfil.");
-        setLoading(false);
-        return;
-      }
-      try {
-        setLoading(true);
-        // Faz as chamadas para os endpoints do perfil e dos uploads em paralelo
-        const [profileResponse, uploadsResponse] = await Promise.all([
-          apiClient.get('/api/profile'),
-          apiClient.get('/api/my-uploads')
-        ]);
-        setProfile(profileResponse.data);
-        setUploads(uploadsResponse.data || []); // Garante que uploads seja um array
-      } catch (err) {
-        setError("Não foi possível carregar os dados do perfil. Tente novamente mais tarde.");
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchProfileData();
-  }, [isAuthenticated]); // Roda sempre que o estado de autenticação mudar
+    // Só busca os uploads se o perfil já foi carregado pelo contexto
+    if (profile) {
+      const fetchUserUploads = async () => {
+        try {
+          setLoadingUploads(true);
+          const response = await apiClient.get<FileData[]>('/api/my-uploads');
+          setUploads(response.data || []);
+        } catch (error) { 
+          console.error("Failed to fetch uploads:", error); 
+        } finally { 
+          setLoadingUploads(false); 
+        }
+      };
+      fetchUserUploads();
+    }
+  }, [profile]); 
 
   const handleTabChange = (event: any, newValue: React.SetStateAction<string>) => {
     setTabValue(newValue);
+  };
+
+  const handleSaveProfile = async (updatedData: Partial<Profile>, avatarFile: File | null) => {
+    try {
+      // 1. Envia as atualizações para o backend (texto e/ou imagem)
+      await apiClient.put('/api/profile', updatedData);
+      
+      if (avatarFile) {
+        const formData = new FormData();
+        formData.append('avatar', avatarFile);
+        await apiClient.post('/api/profile/avatar', formData);
+      }
+      
+      // 2. A MÁGICA: Pede ao AuthContext para buscar os dados mais recentes para TODA a aplicação.
+      await refreshUser();
+
+    } catch (error) {
+      console.error("Failed to save profile:", error);
+      // Você pode adicionar um alerta de erro para o usuário aqui
+    }
   };
 
   const StatCard = ({ icon, value, label }: { icon: React.ReactNode; value: number; label: string; }) => (
@@ -161,36 +245,38 @@ export default function ProfilePage() {
   );
 
   // Renderização condicional para os estados de loading e erro
-  if (loading) {
+  if (authLoading) {
     return <Container sx={{ py: 8, display: 'flex', justifyContent: 'center' }}><CircularProgress size={60} /></Container>;
-  }
-
-  if (error) {
-    return <Container sx={{ py: 8 }}><Alert severity="error">{error}</Alert></Container>;
   }
 
   if (!profile) {
     return <Container sx={{ py: 8 }}><Typography>Perfil não pôde ser carregado.</Typography></Container>;
   }
 
+  const badgeIcons: Record<string, React.ReactElement> = {
+    "Novo Membro": <StarBorderIcon fontSize="small" />,
+    "Colaborador": <CloudUploadIcon fontSize="small" />,
+    "Mestre dos Uploads": <CloudUploadIcon fontSize="small" />, // poderia ser outro ícone
+  };
+
   // Renderização principal com os dados reais
   return (
     <Container maxWidth="lg" sx={{ py: { xs: 4, md: 8 } }}>
       {/* Cabeçalho do Perfil */}
       <Stack direction={{ xs: "column", md: "row" }} spacing={4} alignItems="flex-start">
-        <Avatar src={profile.avatar} alt={profile.name} sx={{ width: 96, height: 96, border: '3px solid', borderColor: 'primary.light' }} />
+        <Avatar src={`http://localhost:8080${profile.avatar}`} alt={profile.name} sx={{ width: 96, height: 96, border: '3px solid', borderColor: 'primary.light' }} />
         <Stack spacing={2} sx={{ flexGrow: 1 }}>
           <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" alignItems="center" spacing={2}>
             <Typography variant="h4" fontWeight="bold">{profile.name}</Typography>
-            <Button variant="outlined" startIcon={<EditIcon />} sx={{ width: { xs: '100%', sm: 'auto' } }}>Editar Perfil</Button>
+            <Button variant="outlined" startIcon={<EditIcon />} sx={{ width: { xs: '100%', sm: 'auto' } }} onClick={() => setEditModalOpen(true)}>Editar Perfil</Button>
           </Stack>
           <Box color="text.secondary">
             <Typography variant="body1">{profile.course} • {profile.faculty}</Typography>
             <Typography variant="body2">Ingressante {profile.yearJoined}</Typography>
           </Box>
           <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
-            {profile.badges.map((badge) => (
-              <Chip key={badge} icon={<EmojiEventsOutlinedIcon />} label={badge} variant="outlined" color="primary" size="small" />
+            {profile.badges?.map((badge) => (
+              <Chip key={badge} icon={badgeIcons[badge] || <EmojiEventsOutlinedIcon />} label={badge} variant="outlined" color="primary" size="small" />
             ))}
           </Stack>
           <Typography variant="body2" sx={{ fontStyle: 'italic', color: 'text.secondary' }}>"{profile.bio}"</Typography>
@@ -199,15 +285,15 @@ export default function ProfilePage() {
 
       {/* Estatísticas do Usuário */}
       <Grid container spacing={2} sx={{ mt: 4 }}>
-        <Grid size={{ xs: 6, sm: 3}}><StatCard icon={<FileUploadOutlinedIcon color="primary" />} value={profile.stats.uploads} label="Materiais Compartilhados" /></Grid>
-        <Grid size={{ xs: 6, sm: 3}}><StatCard icon={<ThumbUpOutlinedIcon color="primary" />} value={profile.stats.likes} label="Curtidas Recebidas" /></Grid>
-        <Grid size={{ xs: 6, sm: 3}}><StatCard icon={<ChatBubbleOutlineOutlinedIcon color="primary" />} value={profile.stats.comments} label="Comentários" /></Grid>
-        <Grid size={{ xs: 6, sm: 3}}><StatCard icon={<EmojiEventsOutlinedIcon color="primary" />} value={profile.stats.reputation} label="Pontos de Reputação" /></Grid>
+        <Grid size={{ xs: 6, sm: 3}}><StatCard icon={<FileUploadOutlinedIcon color="primary" />} value={profile.stats?.uploads ?? 0} label="Materiais Compartilhados" /></Grid>
+        <Grid size={{ xs: 6, sm: 3}}><StatCard icon={<ThumbUpOutlinedIcon color="primary" />} value={profile.stats?.likes ?? 0} label="Curtidas Recebidas" /></Grid>
+        <Grid size={{ xs: 6, sm: 3}}><StatCard icon={<ChatBubbleOutlineOutlinedIcon color="primary" />} value={profile.stats?.comments?? 0} label="Comentários" /></Grid>
+        <Grid size={{ xs: 6, sm: 3}}><StatCard icon={<EmojiEventsOutlinedIcon color="primary" />} value={profile.stats?.reputation?? 0} label="Pontos de Reputação" /></Grid>
       </Grid>
 
       {/* Abas de Conteúdo do Perfil */}
       <Box sx={{ mt: 6 }}>
-        <Tabs value={tabValue} onChange={handleTabChange} variant="scrollable" scrollButtons="auto" centered>
+        <Tabs value={tabValue} onChange={handleTabChange} variant="scrollable" scrollButtons="auto">
           <Tab icon={<DescriptionOutlinedIcon />} iconPosition="start" label="Uploads" value="uploads" />
           <Tab icon={<BookmarkBorderOutlinedIcon />} iconPosition="start" label="Salvos" value="saved" />
           <Tab icon={<HistoryIcon />} iconPosition="start" label="Atividade" value="activity" />
@@ -240,6 +326,15 @@ export default function ProfilePage() {
 
         <TabPanel value={tabValue} index="settings"><ProfileSettings user={profile} /></TabPanel>
       </Box>
+
+      {profile && (
+        <EditProfileModal
+          open={isEditModalOpen}
+          onClose={() => setEditModalOpen(false)}
+          profile={profile}
+          onSave={handleSaveProfile}
+        />
+      )}
     </Container>
   );
 }

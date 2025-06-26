@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import {
   Card,
@@ -11,6 +11,7 @@ import {
   Stack,
   Link as MuiLink,
   Divider,
+  IconButton,
 } from '@mui/material';
 
 // Ícones do Material-UI
@@ -19,6 +20,8 @@ import PersonOutlineOutlinedIcon from '@mui/icons-material/PersonOutlineOutlined
 import CalendarTodayOutlinedIcon from '@mui/icons-material/CalendarTodayOutlined';
 import ThumbUpOutlinedIcon from '@mui/icons-material/ThumbUpOutlined';
 import ChatBubbleOutlineOutlinedIcon from '@mui/icons-material/ChatBubbleOutlineOutlined';
+
+import { useLikes } from '../context/LikesContext';
 
 // A interface de props permanece a mesma
 interface FileCardProps {
@@ -29,17 +32,30 @@ interface FileCardProps {
     type: string;
     course: string;
     courseCode: string;
-    professor: string;
+    professorName: string;
     semester: string;
     uploadDate: string;
-    uploader?: string;
     tags: string[];
     likes: number;
     comments: number;
+
+    uploaderName?: string; 
+    uploaderAvatar?: string; 
+    professorAvatar?: string; 
   };
 }
 
 export function FileCard({ file }: FileCardProps) {
+  const { hasLiked, toggleLike } = useLikes();
+  const [likeCount, setLikeCount] = useState(file.likes);
+
+  const handleLikeClick = async (e: React.MouseEvent) => {
+    e.preventDefault(); // Impede a navegação ao clicar no botão de like
+    e.stopPropagation();
+    const { likes } = await toggleLike(file.id);
+    setLikeCount(likes);
+  };
+  
   return (
     // O Card Action Area torna toda a área do card (exceto os botões) clicável
     <Card
@@ -96,8 +112,10 @@ export function FileCard({ file }: FileCardProps) {
             <Typography variant="body2">{file.course} ({file.courseCode})</Typography>
           </Stack>
           <Stack direction="row" alignItems="center" spacing={1}>
-            <PersonOutlineOutlinedIcon sx={{ fontSize: 16 }} />
-            <Typography variant="body2">{file.professor}</Typography>
+            <Avatar sx={{ width: 24, height: 24, fontSize: '0.75rem' }} src={'http://localhost:8080' + file.professorAvatar}>
+              {file.professorAvatar ? '' : 'A'}
+            </Avatar>
+            <Typography variant="body2">{file.professorName || 'Não informado'}</Typography>
           </Stack>
           <Stack direction="row" alignItems="center" spacing={1}>
             <CalendarTodayOutlinedIcon sx={{ fontSize: 16 }} />
@@ -121,8 +139,10 @@ export function FileCard({ file }: FileCardProps) {
       <CardActions sx={{ p: 2, justifyContent: 'space-between', alignItems: 'center' }}>
         <Stack direction="row" spacing={2} color="text.secondary">
           <Stack direction="row" alignItems="center" spacing={0.5}>
-            <ThumbUpOutlinedIcon sx={{ fontSize: 16 }} />
-            <Typography variant="body2">{file.likes}</Typography>
+            <IconButton size="small" onClick={handleLikeClick}>
+                  <ThumbUpOutlinedIcon fontSize="small" color={hasLiked(file.id) ? "primary" : "action"} />
+            </IconButton>
+            <Typography variant="body2">{likeCount}</Typography>
           </Stack>
           <Stack direction="row" alignItems="center" spacing={0.5}>
             <ChatBubbleOutlineOutlinedIcon sx={{ fontSize: 16 }} />
@@ -131,10 +151,10 @@ export function FileCard({ file }: FileCardProps) {
         </Stack>
 
         <Stack direction="row" alignItems="center" spacing={1} color="text.secondary">
-          <Avatar sx={{ width: 24, height: 24, fontSize: '0.75rem' }}>
-            {file.uploader ? file.uploader.charAt(0) : 'A'}
+          <Avatar sx={{ width: 24, height: 24, fontSize: '0.75rem' }} src={'http://localhost:8080' + file.uploaderAvatar}>
+            {file.uploaderAvatar ? '' : 'A'}
           </Avatar>
-          <Typography variant="body2">{file.uploader || 'Anônimo'}</Typography>
+          <Typography variant="body2">{file.uploaderName || 'Anônimo'}</Typography>
         </Stack>
       </CardActions>
     </Card>

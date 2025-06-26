@@ -19,6 +19,11 @@ var UserCollection *mongo.Collection
 var ResourceCollection *mongo.Collection
 var CommentCollection *mongo.Collection
 var NotificationCollection *mongo.Collection
+var CourseCollection *mongo.Collection
+var ProfessorCollection *mongo.Collection
+var TagCollection *mongo.Collection
+var LikeCollection *mongo.Collection
+var CommentLikeCollection *mongo.Collection
 
 func InitDB() {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -49,6 +54,11 @@ func InitDB() {
 	ResourceCollection = database.Collection("resources")
 	CommentCollection = database.Collection("comments")
 	NotificationCollection = database.Collection("notifications")
+	CourseCollection = database.Collection("courses")
+	ProfessorCollection = database.Collection("professors")
+	TagCollection = database.Collection("tags")
+	LikeCollection = database.Collection("likes")
+	CommentLikeCollection = database.Collection("comment_likes")
 
 	log.Println("Conectado ao MongoDB com sucesso!")
 	createIndexes()

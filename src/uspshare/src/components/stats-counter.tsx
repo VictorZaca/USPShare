@@ -1,44 +1,39 @@
-import { useEffect, useState } from "react"
-import { Box, Typography } from "@mui/material"
+import React, { useEffect, useState } from 'react';
+import { Typography, Box, Stack } from '@mui/material';
 
 interface StatsCounterProps {
-  value: number
-  label: string
-  duration?: number
+  icon: React.ReactNode;
+  value: number;
+  label: string;
 }
 
-export default function StatsCounter({ value, label, duration = 2000 }: StatsCounterProps) {
-  const [count, setCount] = useState(0)
+export const StatsCounter: React.FC<StatsCounterProps> = ({ icon, value, label }) => {
+  const [count, setCount] = useState(0);
 
   useEffect(() => {
-    let startTime: number
-    let animationFrameId: number
+    let start = 0;
+    const end = value;
+    if (start === end) return;
 
-    const step = (timestamp: number) => {
-      if (!startTime) startTime = timestamp
-      const progress = Math.min((timestamp - startTime) / duration, 1)
-      setCount(Math.floor(progress * value))
+    const duration = 1500; // 1.5 segundos
+    const incrementTime = Math.floor(duration / end);
 
-      if (progress < 1) {
-        animationFrameId = window.requestAnimationFrame(step)
-      }
-    }
+    const timer = setInterval(() => {
+      start += 1;
+      setCount(start);
+      if (start === end) clearInterval(timer);
+    }, incrementTime);
 
-    animationFrameId = window.requestAnimationFrame(step)
-
-    return () => {
-      window.cancelAnimationFrame(animationFrameId)
-    }
-  }, [value, duration])
+    return () => clearInterval(timer);
+  }, [value]);
 
   return (
-    <Box textAlign="center">
-      <Typography variant="h4" fontWeight="bold" color="primary">
-        {count.toLocaleString()}+
-      </Typography>
-      <Typography variant="body2" color="text.secondary" mt={0.5}>
-        {label}
-      </Typography>
-    </Box>
-  )
-}
+    <Stack spacing={1} alignItems="center">
+        {icon}
+        <Typography variant="h3" component="p" fontWeight="bold">
+            {count.toLocaleString('pt-BR')}
+        </Typography>
+        <Typography color="text.secondary">{label}</Typography>
+    </Stack>
+  );
+};

@@ -41,10 +41,10 @@ export default function AboutPage() {
             <Typography variant="h5" fontWeight="bold" gutterBottom>
               Nossa Missão
             </Typography>
-            <Typography paragraph>
+            <Typography paragraph sx={ { textAlign: "justify" } }>
               O USPShare é uma rede colaborativa criada por e para estudantes da Universidade de São Paulo. Nossa missão é democratizar o acesso a materiais acadêmicos — provas, listas, resumos e enunciados — reunindo, em um único lugar, tudo o que você precisa para planejar seus estudos de forma antecipada e eficiente.
             </Typography>
-            <Typography paragraph>
+            <Typography paragraph sx={ { textAlign: "justify" } }>
               Acreditamos que o conhecimento deve ser compartilhado e que todos os estudantes merecem acesso a recursos de qualidade para apoiar sua jornada acadêmica.
             </Typography>
           </Grid>
@@ -66,18 +66,16 @@ export default function AboutPage() {
           <Typography variant="h5" fontWeight="bold" gutterBottom>
             Nossa História
           </Typography>
-          <Typography paragraph>
-            O USPShare nasceu em 2023, quando um grupo de estudantes de diferentes unidades da USP percebeu a dificuldade em encontrar materiais de estudo de qualidade para suas disciplinas.
+          <Typography paragraph sx={ { textAlign: "justify" } }>
+            O USPShare nasceu em 2025, quando dois estudantes do Instituto de Matemática e Estatística da USP perceberam a dificuldade em encontrar materiais de estudo de qualidade para suas disciplinas.
           </Typography>
-          <Typography paragraph>
+          <Typography paragraph sx={ { textAlign: "justify" } }>
             Inspirados pela cultura de colaboração que define a comunidade USP, decidimos criar uma plataforma que pudesse centralizar esses recursos e torná-los acessíveis a todos os estudantes.
           </Typography>
-          <Typography paragraph>
-            Desde então, o USPShare tem crescido rapidamente, com milhares de materiais compartilhados e uma comunidade ativa de usuários que contribuem diariamente.
-          </Typography>
+
 
           <Grid container spacing={2} mt={2}>
-            {["2023", "5", "42", "3500+"].map((text, idx) => (
+            {["2025", "2", "1", "2"].map((text, idx) => (
               <Grid size={ { xs: 6, md: 3 } } key={idx}>
                 <Box textAlign="center" p={2} bgcolor="grey.100" borderRadius={2}>
                   <Typography variant="h6" color="primary">
@@ -126,7 +124,7 @@ export default function AboutPage() {
                 <Card sx={{ p: 2 }}>
                   <CardHeader title={val.title} avatar={val.icon} />
                   <CardContent>
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography variant="body2" color="text.secondary" sx={ { textAlign: "justify" } }>
                       {val.desc}
                     </Typography>
                   </CardContent>
@@ -190,28 +188,25 @@ export default function AboutPage() {
           <Typography variant="h5" fontWeight="bold" gutterBottom>
             Nossa Equipe
           </Typography>
-          <Grid container spacing={4} mt={2}>
+          <Grid container spacing={4} mt={2} sx={{justifyContent: "space-evenly"}}>
             {[
               {
-                name: "Ana Silva",
-                role: "Fundadora e Coordenadora",
-                desc: "Estudante de Engenharia de Computação na Poli-USP.",
-              },
-              {
-                name: "Pedro Santos",
-                role: "Desenvolvedor",
+                name: "Enzo Spinella",
+                role: "Fundador e Desenvolvedor",
                 desc: "Estudante de Ciência da Computação no IME-USP.",
+                avatar: "../public/Enzo.jpeg"
               },
               {
-                name: "Mariana Costa",
-                role: "Moderadora de Conteúdo",
-                desc: "Estudante de Direito na FD-USP.",
+                name: "Victor Zacarias",
+                role: "Fundador e Desenvolvedor", 
+                desc: "Estudante de Ciência da Computação no IME-USP.",
+                avatar: "../public/Zacarias.jpeg"
               },
             ].map((member, idx) => (
               <Grid size={ { xs: 12, md: 4 } } key={idx}>
-                <Card>
+                <Card sx={{minHeight: 100}}> 
                   <CardHeader
-                    avatar={<Avatar sx={{ width: 64, height: 64 }} />}
+                    avatar={<Avatar sx={{ width: 64, height: 64 }} src={member.avatar} />}
                     title={member.name}
                     subheader={member.role}
                   />

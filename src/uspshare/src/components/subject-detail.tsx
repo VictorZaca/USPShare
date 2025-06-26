@@ -14,12 +14,14 @@ interface File {
   type: string;
   course: string;
   courseCode: string;
-  professor: string;
+  professorName: string;
   semester: string;
   uploadDate: string;
   tags?: string[];
   likes: number;
   comments: number;
+  uploaderName?: string;
+  uploaderAvatar?: string;
 }
 
 interface SubjectDetailProps {
@@ -45,10 +47,19 @@ export const SubjectDetail: FC<SubjectDetailProps> = ({
   const [showAll, setShowAll] = useState(false);
 
   const filteredAndSortedFiles = useMemo(() => {
+    console.log("FIles in subject:", subject.files);
     let files = subject.files.filter((file) => {
       const matchesTypeFromParent = selectedFileType === "all" || file.type === selectedFileType;
       const matchesActiveTab = activeTab === "all" || file.type === activeTab;
-      const matchesFilters = activeFilters.length === 0 || activeFilters.some((filter) => file.tags ? file.tags.includes(filter) : false);
+      const matchesFilters =
+        activeFilters.length === 0 ||
+        subject.files.some((file) =>
+        activeFilters.some((filter) =>
+          (file.tags && file.tags.includes(filter)) ||
+          (file.semester && file.semester === filter) ||
+          (file.professorName && file.professorName === filter)
+        )
+      );
       return matchesTypeFromParent && matchesActiveTab && matchesFilters;
     });
 
