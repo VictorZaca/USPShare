@@ -29,7 +29,6 @@ export default function FAQPage() {
         Encontre respostas para as dúvidas mais comuns sobre o USPShare e como utilizar a plataforma
       </Typography>
 
-      {/* Search */}
       <Box sx={{ position: "relative", mt: 4, mb: 6 }}>
         <SearchIcon sx={{ position: "absolute", top: 12, left: 12, color: "text.secondary" }} />
         <InputBase
@@ -47,14 +46,12 @@ export default function FAQPage() {
         />
       </Box>
 
-      {/* Tabs */}
       <Tabs value={tab} onChange={handleChange} variant="scrollable" scrollButtons="auto" sx={{ mb: 4 }}>
         {categories.map((label) => (
           <Tab key={label} label={label} />
         ))}
       </Tabs>
 
-      {/* Tab Panels */}
       <Box>
         <Typography variant="h6" fontWeight="medium" gutterBottom>
           Perguntas da categoria: {categories[tab]}
@@ -71,7 +68,6 @@ export default function FAQPage() {
             </Typography>
           </AccordionDetails>
         </Accordion>
-        {/* Outras perguntas viriam aqui em accordions semelhantes */}
       </Box>
 
       <Box mt={8} textAlign="center" bgcolor="action.hover" p={4} borderRadius={2}>

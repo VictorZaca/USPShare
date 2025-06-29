@@ -1,5 +1,3 @@
-// SignupPage.js - VERSÃO INTEGRADA
-
 import React, { useState, useMemo } from "react";
 import { useNavigate, Link as RouterLink } from "react-router-dom";
 import {
@@ -21,21 +19,16 @@ import {
 } from "@mui/material";
 import { LoadingButton } from "@mui/lab";
 
-// --- INÍCIO DA ALTERAÇÃO ---
-import apiClient from "../api/axios"; // 1. Importar nosso cliente de API
-// --- FIM DA ALTERAÇÃO ---
+import apiClient from "../api/axios"; 
 
-// Material-UI Icons
 import MenuBookIcon from "@mui/icons-material/MenuBook";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 
-// --- Seu componente PasswordStrengthIndicator (sem alterações) ---
 interface PasswordStrengthIndicatorProps {
   password: string;
 }
 
-// --- Seu componente PasswordStrengthIndicator (sem alterações) ---
 const PasswordStrengthIndicator: React.FC<PasswordStrengthIndicatorProps> = ({ password }) => {
   const { strength, color, label } = useMemo(() => {
     let score = 0;
@@ -61,7 +54,6 @@ const PasswordStrengthIndicator: React.FC<PasswordStrengthIndicatorProps> = ({ p
   );
 };
 
-// --- Componente Principal da Página de Cadastro ---
 export default function SignupPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -79,7 +71,6 @@ export default function SignupPage() {
     e.preventDefault();
     setError(null);
 
-    // Frontend Validations (mantidas, pois são ótimas)
     if (!name || !email || !password || !confirmPassword) return setError("Por favor, preencha todos os campos.");
     if (!validateUspEmail(email)) return setError("Por favor, utilize um e-mail USP válido (@usp.br).");
     if (password !== confirmPassword) return setError("As senhas não coincidem.");
@@ -88,34 +79,24 @@ export default function SignupPage() {
     
     setIsLoading(true);
     try {
-      // --- INÍCIO DA ALTERAÇÃO ---
-      // 2. Montar o payload para a API
       const payload = { name, email, password };
 
-      // 3. Chamar o endpoint /api/signup do nosso backend Go
       await apiClient.post("/api/signup", payload);
 
-      // Se a chamada for bem-sucedida, mostramos a tela de sucesso
       setSuccess(true);
-      setTimeout(() => navigate("/login"), 3000); // Redireciona após 3 segundos
-      // --- FIM DA ALTERAÇÃO ---
+      setTimeout(() => navigate("/login"), 3000);
     } catch (err) {
-      // --- INÍCIO DA ALTERAÇÃO ---
-      // 4. Capturar o erro específico do backend
       const axiosError = err as any;
       if (axiosError.response && axiosError.response.data && axiosError.response.data.error) {
-        setError(axiosError.response.data.error); // Ex: "Email already exists"
+        setError(axiosError.response.data.error); 
       } else {
         setError("Falha ao criar conta. Verifique sua conexão e tente novamente.");
       }
-      // --- FIM DA ALTERAÇÃO ---
     } finally {
         setIsLoading(false);
     }
   };
 
-  // O restante do seu JSX permanece o mesmo, pois já está preparado
-  // para lidar com os estados de 'success', 'error' e 'isLoading'.
   return (
     <Container
       component="main"

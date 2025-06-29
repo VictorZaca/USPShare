@@ -12,7 +12,6 @@ export const AdminProtectedRoute = ({ children }: { children: JSX.Element }) => 
   }
 
   if (!isAuthenticated || user?.role !== 'admin') {
-    // Redireciona para o login ou para uma página de "não autorizado"
     return <Navigate to="/explore" state={{ from: location }} replace />;
   }
 

@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, ReactNode, useCallback, useEffect } from 'react';
+import { createContext, useState, useContext, ReactNode, useCallback, useEffect } from 'react';
 import apiClient from '../api/axios';
 import { useAuth } from './AuthContext';
 
@@ -38,7 +38,7 @@ export const CommentLikesProvider = ({ children }: { children: ReactNode }) => {
       console.log("1. Resposta da API (/commentlike de recurso):", response.data);
       return { likes: response.data.likes, hasLiked: newLikedSet.has(commentId) };
     } catch (error) {
-      setLikedComments(likedComments); // Reverte em caso de erro
+      setLikedComments(likedComments); 
       throw error;
     }
   }, [likedComments]);

@@ -14,16 +14,13 @@ import {
   IconButton,
 } from '@mui/material';
 
-// Ícones do Material-UI
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
-import PersonOutlineOutlinedIcon from '@mui/icons-material/PersonOutlineOutlined';
 import CalendarTodayOutlinedIcon from '@mui/icons-material/CalendarTodayOutlined';
 import ThumbUpOutlinedIcon from '@mui/icons-material/ThumbUpOutlined';
 import ChatBubbleOutlineOutlinedIcon from '@mui/icons-material/ChatBubbleOutlineOutlined';
 
 import { useLikes } from '../context/LikesContext';
 
-// A interface de props permanece a mesma
 interface FileCardProps {
   file: {
     id: string;
@@ -50,14 +47,13 @@ export function FileCard({ file }: FileCardProps) {
   const [likeCount, setLikeCount] = useState(file.likes);
 
   const handleLikeClick = async (e: React.MouseEvent) => {
-    e.preventDefault(); // Impede a navegação ao clicar no botão de like
+    e.preventDefault(); 
     e.stopPropagation();
     const { likes } = await toggleLike(file.id);
     setLikeCount(likes);
   };
   
   return (
-    // O Card Action Area torna toda a área do card (exceto os botões) clicável
     <Card
       variant="outlined"
       sx={{
@@ -66,11 +62,10 @@ export function FileCard({ file }: FileCardProps) {
         flexDirection: 'column',
         transition: 'box-shadow 0.2s ease-in-out',
         '&:hover': {
-          boxShadow: 4, // Elevação no hover para dar feedback
+          boxShadow: 4, 
         },
       }}
     >
-      {/* Cabeçalho com Tipo e Título Clicável */}
       <CardContent sx={{ pb: 1 }}>
         <Chip label={file.type} variant="outlined" size="small" sx={{ mb: 1.5 }} />
         <MuiLink
@@ -86,7 +81,6 @@ export function FileCard({ file }: FileCardProps) {
             },
           }}
         >
-          {/* Lógica para limitar o título a 2 linhas com CSS */}
           <Typography
             variant="h6"
             component="h3"
@@ -104,7 +98,6 @@ export function FileCard({ file }: FileCardProps) {
         </MuiLink>
       </CardContent>
 
-      {/* Conteúdo com Informações da Disciplina e Tags */}
       <CardContent sx={{ flexGrow: 1, py: 1 }}>
         <Stack spacing={1.5} sx={{ color: 'text.secondary' }}>
           <Stack direction="row" alignItems="center" spacing={1}>
@@ -135,7 +128,6 @@ export function FileCard({ file }: FileCardProps) {
 
       <Divider />
 
-      {/* Rodapé com Likes, Comentários e Uploader */}
       <CardActions sx={{ p: 2, justifyContent: 'space-between', alignItems: 'center' }}>
         <Stack direction="row" spacing={2} color="text.secondary">
           <Stack direction="row" alignItems="center" spacing={0.5}>

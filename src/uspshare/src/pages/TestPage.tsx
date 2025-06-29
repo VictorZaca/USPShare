@@ -9,23 +9,17 @@ import {
   Stack,
   Paper,
   Avatar,
-  Icon,
 } from "@mui/material";
 
-// Material-UI Icons
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import FileUploadOutlinedIcon from "@mui/icons-material/FileUploadOutlined";
 import SearchIcon from "@mui/icons-material/Search";
 import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
 import GroupOutlinedIcon from "@mui/icons-material/GroupOutlined";
-import MenuBookOutlinedIcon from "@mui/icons-material/MenuBookOutlined";
 import SecurityOutlinedIcon from '@mui/icons-material/SecurityOutlined';
 import HowToRegIcon from '@mui/icons-material/HowToReg';
 import FindInPageIcon from '@mui/icons-material/FindInPage';
 import Diversity3Icon from '@mui/icons-material/Diversity3';
-
-
-// --- Reusable Components for the Landing Page ---
 
 interface FeatureCardProps {
   icon: React.ReactNode;
@@ -33,7 +27,6 @@ interface FeatureCardProps {
   description: string;
 }
 
-// A simple card for displaying features
 const FeatureCard: React.FC<FeatureCardProps> = ({ icon, title, description }) => (
   <Stack spacing={2} alignItems="center" textAlign="center">
     <Avatar sx={{ bgcolor: "primary.light", width: 64, height: 64 }}>
@@ -48,7 +41,6 @@ const FeatureCard: React.FC<FeatureCardProps> = ({ icon, title, description }) =
   </Stack>
 );
 
-// A simple component for displaying stats
 interface StatsCounterProps {
   value: number;
   label: string;
@@ -57,18 +49,15 @@ interface StatsCounterProps {
 const StatsCounter: React.FC<StatsCounterProps> = ({ value, label }) => (
   <Box>
     <Typography variant="h3" component="p" fontWeight="bold" color="primary">
-      {/* In a real app, you could use a library like react-countup for animation */}
       {value.toLocaleString("pt-BR")}+
     </Typography>
     <Typography color="text.secondary">{label}</Typography>
   </Box>
 );
 
-// --- Main Home Page Component ---
 export default function HomePage() {
   return (
     <Box>
-      {/* Hero Section */}
       <Box
         component="section"
         sx={{
@@ -136,7 +125,6 @@ export default function HomePage() {
         </Container>
       </Box>
 
-      {/* Stats Section */}
       <Box component="section" sx={{ py: 8 }}>
         <Container>
           <Grid container spacing={4} textAlign="center">
@@ -148,7 +136,6 @@ export default function HomePage() {
         </Container>
       </Box>
 
-      {/* Features Section */}
       <Box component="section" sx={{ bgcolor: "grey.50", py: { xs: 8, md: 12 } }}>
         <Container>
           <Stack spacing={2} alignItems="center" textAlign="center" sx={{ mb: 8 }}>
@@ -168,7 +155,6 @@ export default function HomePage() {
         </Container>
       </Box>
 
-      {/* How It Works Section */}
        <Box component="section" sx={{ py: { xs: 8, md: 12 } }}>
         <Container>
           <Stack spacing={2} alignItems="center" textAlign="center" sx={{ mb: 8 }}>
@@ -185,7 +171,6 @@ export default function HomePage() {
         </Container>
       </Box>
 
-      {/* CTA Section */}
       <Box component="section" sx={{ bgcolor: "primary.main", color: "primary.contrastText", py: { xs: 8, md: 12 } }}>
         <Container>
           <Stack spacing={3} alignItems="center" textAlign="center">

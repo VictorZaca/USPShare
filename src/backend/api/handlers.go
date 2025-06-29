@@ -35,7 +35,6 @@ func writeJSON(w http.ResponseWriter, status int, v any) {
 }
 
 func HandleSignup(w http.ResponseWriter, r *http.Request) {
-	// 1. Usar uma struct SÓ para a requisição, que pode receber a senha.
 	var req struct {
 		Name     string `json:"name"`
 		Email    string `json:"email"`
@@ -47,27 +46,20 @@ func HandleSignup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Adicione validações aqui se desejar (campos vazios, etc)
 	if req.Name == "" || req.Email == "" || req.Password == "" {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Nome, e-mail e senha são obrigatórios."})
 		return
 	}
 
-	// Log para confirmar que a senha foi recebida corretamente
 	log.Printf("Cadastrando usuário '%s' com a senha de %d caracteres.", req.Email, len(req.Password))
 
-	// 2. Criar a nossa struct 'models.User' para passar para a camada de store.
-	// A função store.CreateUser será responsável por fazer o hash da senha.
 	user := models.User{
 		Name:     req.Name,
 		Email:    req.Email,
-		Password: req.Password, // Passando a senha em texto plano para a próxima camada
+		Password: req.Password,
 	}
 
-	// 3. Chamar a função do store com os dados corretos
 	if err := store.CreateUser(&user); err != nil {
-		// No futuro, você pode adicionar um tratamento para erro de email duplicado aqui
-		// if mongo.IsDuplicateKeyError(err) { ... }
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Não foi possível criar o usuário"})
 		return
 	}
@@ -86,31 +78,25 @@ func HandleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// --- LOG DE DEBUG 1: VERIFICA O QUE FOI RECEBIDO ---
 	log.Printf("Recebida tentativa de login para o email: '%s'", req.Email)
 
 	user, err := store.GetUserByEmail(req.Email)
 	if err != nil {
-		// --- LOG DE DEBUG 2: O USUÁRIO NÃO FOI ENCONTRADO ---
 		log.Printf("ERRO: Usuário com email '%s' não foi encontrado no banco de dados.", req.Email)
 		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "Credenciais inválidas"})
 		return
 	}
 
-	// --- LOG DE DEBUG 3: O USUÁRIO FOI ENCONTRADO ---
 	log.Println("Usuário encontrado. Verificando a senha...")
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password)); err != nil {
-		// --- LOG DE DEBUG 4: A SENHA ESTÁ INCORRETA ---
 		log.Println("ERRO: A senha fornecida NÃO BATE com o hash salvo no banco.")
 		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "Credenciais inválidas"})
 		return
 	}
 
-	// --- LOG DE DEBUG 5: SUCESSO! ---
 	log.Println("Senha correta! Gerando token JWT...")
 
-	// Gerar Token JWT
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"userId": user.ID,
 		"exp":    time.Now().Add(time.Hour * 24).Unix(), // Token expira em 24 horas
@@ -142,7 +128,6 @@ func HandleListResources(w http.ResponseWriter, r *http.Request) {
 }
 
 func HandleGetProfile(w http.ResponseWriter, r *http.Request) {
-	// Pega o userId que o middleware colocou no contexto
 	userIDHex, ok := r.Context().Value(userContextKey).(string)
 	if !ok {
 		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "Unauthorized"})
@@ -150,38 +135,29 @@ func HandleGetProfile(w http.ResponseWriter, r *http.Request) {
 	}
 	userID, _ := primitive.ObjectIDFromHex(userIDHex)
 
-	// 1. Busca os dados principais do usuário (que agora incluem bio, curso, avatarUrl, etc.)
 	user, err := store.GetUserByID(userID)
 	if err != nil {
 		writeJSON(w, http.StatusNotFound, map[string]string{"error": "User not found"})
 		return
 	}
 
-	// 2. Busca as estatísticas reais que já implementamos
 	uploadsCount, _ := store.CountUserUploads(userID)
 	commentsCount, _ := store.CountUserComments(userID)
 
-	// 3. Monta o objeto de estatísticas
-	// Removemos os dados mockados e confiamos nos dados do banco.
-	// Likes e Reputation continuam como placeholder por enquanto.
 	user.Stats = models.UserStats{
 		Uploads:    int(uploadsCount),
-		Likes:      0, // TODO: Implementar lógica de contagem de likes
+		Likes:      0,
 		Comments:   int(commentsCount),
-		Reputation: 0, // TODO: Implementar lógica de reputação
+		Reputation: 0,
 	}
 
 	earnedBadges := badge.EvaluateBadges(user.Stats)
-	// 3. Atribui a lista de badges conquistadas ao objeto do usuário
 	user.Badges = earnedBadges
 
-	// Se o usuário ainda não tiver um avatar, podemos definir um padrão aqui
 	if user.AvatarURL == "" {
-		// Isso pode ser uma URL de um avatar padrão no seu frontend ou um serviço externo
 		user.AvatarURL = "https://i.pravatar.cc/150?u=" + user.Email
 	}
 
-	// 4. Envia o objeto 'user' completo, com os dados reais do banco.
 	writeJSON(w, http.StatusOK, user)
 }
 
@@ -203,7 +179,6 @@ func HandleGetUserUploads(w http.ResponseWriter, r *http.Request) {
 }
 
 func HandleUploadResource(w http.ResponseWriter, r *http.Request) {
-	// 1. Obter o ID do usuário do token (colocado pelo middleware)
 	userIDHex, ok := r.Context().Value(userContextKey).(string)
 	if !ok {
 		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "Unauthorized"})
@@ -211,25 +186,21 @@ func HandleUploadResource(w http.ResponseWriter, r *http.Request) {
 	}
 	userID, _ := primitive.ObjectIDFromHex(userIDHex)
 
-	// 2. Parse do formulário multipart (limite de 10MB para o upload)
 	if err := r.ParseMultipartForm(10 << 20); err != nil {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "File too large"})
 		return
 	}
 
-	// 3. Obter o arquivo da requisição
-	file, handler, err := r.FormFile("file") // "file" deve ser o nome do campo no frontend
+	file, handler, err := r.FormFile("file")
 	if err != nil {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid file field"})
 		return
 	}
 	defer file.Close()
 
-	// 4. Gerar um nome de arquivo único para evitar colisões
 	uniqueFileName := uuid.New().String() + filepath.Ext(handler.Filename)
 	filePath := filepath.Join("uploads", uniqueFileName)
 
-	// 5. Criar o arquivo no servidor e salvar o conteúdo
 	dst, err := os.Create(filePath)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to save file"})
@@ -242,13 +213,9 @@ func HandleUploadResource(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 6. Criar o objeto Resource para salvar no banco
-	// Os campos do formulário são acessados com r.FormValue()
 	tagsJSON := r.FormValue("tags")
 	var tags []string
-	// Decodifica a string JSON de tags em um slice de strings
 	if err := json.Unmarshal([]byte(tagsJSON), &tags); err != nil {
-		// Se falhar, podemos simplesmente ignorar as tags ou logar o erro
 		log.Printf("Erro ao decodificar tags: %v", err)
 	}
 
@@ -276,7 +243,6 @@ func HandleUploadResource(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// 7. Salvar os metadados no MongoDB (você precisará criar a função store.CreateResource)
 	if err := store.CreateResource(&resource); err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to save resource metadata"})
 		return
@@ -288,18 +254,15 @@ func HandleUploadResource(w http.ResponseWriter, r *http.Request) {
 func HandleGetResources(w http.ResponseWriter, r *http.Request) {
 	resources, err := store.ListResources()
 	if err != nil {
-		// Se houver um erro ao buscar no banco, retornamos um erro de servidor
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to fetch resources"})
 		return
 	}
 
-	// Se tudo deu certo, enviamos a lista de recursos com status 200 OK
 	writeJSON(w, http.StatusOK, resources)
 }
 
 func HandleGetResourceByID(w http.ResponseWriter, r *http.Request) {
-	// Pega o ID da URL. Ex: /api/resource/60d...
-	idParam := chi.URLParam(r, "id") // Para Chi. Se for Fiber, seria c.Params("id")
+	idParam := chi.URLParam(r, "id")
 	objID, err := primitive.ObjectIDFromHex(idParam)
 	if err != nil {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid resource ID"})
@@ -332,32 +295,25 @@ func HandleListComments(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, comments)
 }
 
-// HandlePostComment cria um novo comentário. Rota protegida.
 func HandlePostComment(w http.ResponseWriter, r *http.Request) {
-	// Pega o ID do recurso da URL
 	resourceIDHex := chi.URLParam(r, "id")
 	resourceID, _ := primitive.ObjectIDFromHex(resourceIDHex)
 
-	// Pega o ID do usuário do token
 	userIDHex, _ := r.Context().Value(userContextKey).(string)
 	userID, _ := primitive.ObjectIDFromHex(userIDHex)
 
-	// Define uma struct para decodificar o corpo da requisição
 	var req struct {
 		Content  string `json:"content"`
-		ParentID string `json:"parentId,omitempty"` // Esperamos receber o parentId aqui
+		ParentID string `json:"parentId,omitempty"`
 	}
 
-	// Decodifica o JSON que o frontend enviou
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Content == "" {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Comment content is required"})
 		return
 	}
 
-	// --- LOG DE DEBUG 1: O QUE O BACKEND RECEBEU? ---
 	log.Printf("Recebido pedido para postar comentário. Conteúdo: '%s', ParentID recebido: '%s'", req.Content, req.ParentID)
 
-	// Cria a base do nosso novo comentário
 	comment := models.Comment{
 		ID:         primitive.NewObjectID(),
 		ResourceID: resourceID,
@@ -366,19 +322,15 @@ func HandlePostComment(w http.ResponseWriter, r *http.Request) {
 		CreatedAt:  time.Now(),
 	}
 
-	// --- LÓGICA CRÍTICA: Atribui o ParentID se ele for válido ---
 	if req.ParentID != "" {
 		parentObjID, err := primitive.ObjectIDFromHex(req.ParentID)
 		if err != nil {
-			// --- LOG DE DEBUG 3: CONFIRMAÇÃO ---
 			log.Printf("ParentID recebido ('%s') é inválido. Criando como comentário principal.", req.ParentID)
 		} else {
-			// --- LOG DE DEBUG 2: CONFIRMAÇÃO ---
 			log.Printf("ParentID '%s' é válido. Anexando ao comentário.", req.ParentID)
-			comment.ParentID = &parentObjID // Atribui o ponteiro do ID
+			comment.ParentID = &parentObjID
 		}
 	} else {
-		// --- LOG DE DEBUG 3: CONFIRMAÇÃO ---
 		log.Printf("ParentID recebido ('%s') é inválido ou vazio. Criando como comentário principal.", req.ParentID)
 	}
 
@@ -409,17 +361,14 @@ func HandlePostComment(w http.ResponseWriter, r *http.Request) {
 
 	newCommentData, err := store.GetCommentWithAuthorByID(comment.ID)
 	if err != nil {
-		// Se falhar em buscar por algum motivo, retorna um erro.
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Comment posted, but failed to retrieve it"})
 		return
 	}
 
-	// Se deu tudo certo, retorna o objeto completo do novo comentário.
 	writeJSON(w, http.StatusCreated, newCommentData)
 }
 
 func HandleGetNotifications(w http.ResponseWriter, r *http.Request) {
-	// Pega o ID do usuário que o AuthMiddleware colocou no contexto
 	userIDHex, ok := r.Context().Value(userContextKey).(string)
 	if !ok {
 		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "Unauthorized"})
@@ -436,9 +385,7 @@ func HandleGetNotifications(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, notifications)
 }
 
-// HandleMarkNotificationAsRead marca uma notificação específica como lida.
 func HandleMarkNotificationAsRead(w http.ResponseWriter, r *http.Request) {
-	// Pega o ID da notificação da URL (ex: /api/notifications/SEU_ID/read)
 	notificationIDHex := chi.URLParam(r, "id")
 	notificationID, err := primitive.ObjectIDFromHex(notificationIDHex)
 	if err != nil {
@@ -446,7 +393,6 @@ func HandleMarkNotificationAsRead(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Pega o ID do usuário do token para segurança
 	userIDHex, _ := r.Context().Value(userContextKey).(string)
 	userID, _ := primitive.ObjectIDFromHex(userIDHex)
 
@@ -494,7 +440,6 @@ func HandleUpdateProfile(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]string{"message": "Profile updated successfully"})
 }
 
-// HandleUpdateAvatar lida com o upload da imagem de avatar do usuário.
 func HandleUpdateAvatar(w http.ResponseWriter, r *http.Request) {
 	userIDHex, _ := r.Context().Value(userContextKey).(string)
 	userID, _ := primitive.ObjectIDFromHex(userIDHex)
@@ -507,11 +452,9 @@ func HandleUpdateAvatar(w http.ResponseWriter, r *http.Request) {
 	}
 	defer file.Close()
 
-	// Salva o avatar em uma subpasta para organização
 	avatarFileName := userID.Hex() + filepath.Ext(handler.Filename)
 	avatarPath := filepath.Join("uploads", "avatars", avatarFileName)
 
-	// Garante que o diretório de avatares exista
 	os.MkdirAll(filepath.Dir(avatarPath), os.ModePerm)
 
 	dst, _ := os.Create(avatarPath)
@@ -520,7 +463,6 @@ func HandleUpdateAvatar(w http.ResponseWriter, r *http.Request) {
 
 	avatarUrl := "/uploads/avatars/" + avatarFileName
 
-	// Atualiza a URL do avatar no banco de dados
 	update := bson.M{"$set": bson.M{"avatarUrl": avatarUrl}}
 	if err := store.UpdateUserByID(userID, update); err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to update avatar URL"})
@@ -649,7 +591,6 @@ func HandleCreateProfessor(w http.ResponseWriter, r *http.Request) {
 
 func HandleDeleteProfessor(w http.ResponseWriter, r *http.Request) {
 	id, _ := primitive.ObjectIDFromHex(chi.URLParam(r, "id"))
-	// Bônus: aqui você também poderia deletar o arquivo de imagem do avatar do sistema de arquivos.
 	if err := store.DeleteProfessorByID(id); err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to delete professor"})
 		return
@@ -658,7 +599,6 @@ func HandleDeleteProfessor(w http.ResponseWriter, r *http.Request) {
 }
 
 func HandleSearchUsers(w http.ResponseWriter, r *http.Request) {
-	// Pega o termo de busca da query string (ex: /api/users/search?q=enzo)
 	query := r.URL.Query().Get("q")
 
 	userIDHex, _ := r.Context().Value(userContextKey).(string)
@@ -673,7 +613,6 @@ func HandleSearchUsers(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, users)
 }
 
-// HandleShareResource cria a notificação de compartilhamento.
 func HandleShareResource(w http.ResponseWriter, r *http.Request) {
 	senderIDHex, _ := r.Context().Value(userContextKey).(string)
 	senderID, _ := primitive.ObjectIDFromHex(senderIDHex)
@@ -690,18 +629,17 @@ func HandleShareResource(w http.ResponseWriter, r *http.Request) {
 	}
 	recipientID, _ := primitive.ObjectIDFromHex(req.RecipientID)
 
-	// Busca os dados necessários para criar a notificação
 	sender, _ := store.GetUserByID(senderID)
-	resource, _ := store.GetResourceByID(resourceID) // Usamos a GetResourceByID que retorna bson.M
+	resource, _ := store.GetResourceByID(resourceID)
 
 	notification := models.Notification{
 		ID:         primitive.NewObjectID(),
-		UserID:     recipientID, // A notificação é PARA o destinatário
-		ActorName:  sender.Name, // O ator é quem enviou
+		UserID:     recipientID,
+		ActorName:  sender.Name,
 		Type:       "share",
 		Message:    "compartilhou o material '" + resource["title"].(string) + "' com você.",
 		ResourceID: resourceID,
-		CommentID:  primitive.NilObjectID, // Não há comentário associado
+		CommentID:  primitive.NilObjectID,
 		IsRead:     false,
 		CreatedAt:  time.Now(),
 	}
@@ -725,10 +663,8 @@ func HandleToggleLike(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if hasLiked {
-		// Se já curtiu, descurte.
 		store.DeleteLike(userID, resourceID)
 	} else {
-		// Se não curtiu, cria o like.
 		like := models.Like{
 			ID:         primitive.NewObjectID(),
 			UserID:     userID,
@@ -740,19 +676,15 @@ func HandleToggleLike(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// Tenta buscar os dados do recurso para encontrar o autor.
 		resourceData, err := store.GetResourceByID(resourceID)
 		if err == nil && resourceData != nil {
 
-			// 1. Verifica se o campo 'uploaderInfo' existe E se ele é do tipo correto.
 			if uploaderInfo, ok := resourceData["uploaderInfo"].(primitive.M); ok && uploaderInfo != nil {
 
-				// 2. Verifica se o campo '_id' existe dentro do uploaderInfo.
 				if resourceAuthorID, ok := uploaderInfo["_id"].(primitive.ObjectID); ok {
 
-					// 3. Garante que o usuário não está curtindo o próprio material.
 					if resourceAuthorID != userID {
-						sender, _ := store.GetUserByID(userID) // Busca o nome de quem curtiu
+						sender, _ := store.GetUserByID(userID)
 						if sender != nil {
 							notification := models.Notification{
 								ID:         primitive.NewObjectID(),
@@ -774,7 +706,6 @@ func HandleToggleLike(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Retorna o novo estado e contagem de likes
 	newLikeCount, _ := store.CountLikesForResource(resourceID)
 	writeJSON(w, http.StatusOK, map[string]interface{}{
 		"likes":    newLikeCount,
@@ -809,12 +740,10 @@ func HandleToggleCommentLike(w http.ResponseWriter, r *http.Request) {
 		}
 		store.LikeComment(&like)
 
-		// Lógica para notificar o autor do comentário (não de si mesmo)
 		comment, _ := store.GetCommentByID(commentID)
 		if comment != nil && comment.UserID != userID {
 			sender, _ := store.GetUserByID(userID)
 			notification := models.Notification{
-				// ... (preencha a notificação do tipo 'comment_like')
 				ID:         primitive.NewObjectID(),
 				UserID:     comment.UserID,
 				ActorName:  sender.Name,
@@ -836,7 +765,6 @@ func HandleToggleCommentLike(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// HandleGetMyCommentLikes retorna os IDs de todos os comentários que o usuário curtiu.
 func HandleGetMyCommentLikes(w http.ResponseWriter, r *http.Request) {
 	userID, _ := primitive.ObjectIDFromHex(r.Context().Value(userContextKey).(string))
 	likedIDs, err := store.GetUserLikedCommentIDs(userID)
@@ -850,8 +778,7 @@ func HandleGetMyCommentLikes(w http.ResponseWriter, r *http.Request) {
 func HandleGetRelatedResources(w http.ResponseWriter, r *http.Request) {
 	resourceID, _ := primitive.ObjectIDFromHex(chi.URLParam(r, "id"))
 
-	// 1. Primeiro, busca o recurso atual para descobrir o código da disciplina.
-	currentResource, err := store.GetResourceByID(resourceID) // Usamos a função que já retorna bson.M
+	currentResource, err := store.GetResourceByID(resourceID)
 	if err != nil {
 		writeJSON(w, http.StatusNotFound, map[string]string{"error": "Resource not found"})
 		return
@@ -859,11 +786,10 @@ func HandleGetRelatedResources(w http.ResponseWriter, r *http.Request) {
 
 	courseCode, ok := currentResource["courseCode"].(string)
 	if !ok {
-		writeJSON(w, http.StatusOK, []models.Resource{}) // Retorna lista vazia se não tiver courseCode
+		writeJSON(w, http.StatusOK, []models.Resource{})
 		return
 	}
 
-	// 2. Agora, busca os recursos relacionados.
 	relatedResources, err := store.FindRelatedResources(courseCode, resourceID)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to fetch related resources"})
@@ -874,7 +800,6 @@ func HandleGetRelatedResources(w http.ResponseWriter, r *http.Request) {
 }
 
 func HandleGetStats(w http.ResponseWriter, r *http.Request) {
-	// Usamos um 'error group' para buscar todas as contagens em paralelo, por performance.
 	var g errgroup.Group
 
 	var userCount, resourceCount, courseCount int64
@@ -890,7 +815,6 @@ func HandleGetStats(w http.ResponseWriter, r *http.Request) {
 		return err
 	})
 	g.Go(func() error {
-		// Contar cursos distintos é um pouco diferente
 		distinctCourses, err := database.CourseCollection.Distinct(context.Background(), "code", bson.M{})
 		courseCount = int64(len(distinctCourses))
 		return err
@@ -901,13 +825,11 @@ func HandleGetStats(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// O número de downloads seria uma lógica mais complexa (ex: uma coleção 'downloads').
-	// Por enquanto, vamos retornar um número mockado para esta estatística.
 	stats := map[string]int64{
 		"users":     userCount,
 		"resources": resourceCount,
 		"courses":   courseCount,
-		"downloads": 25000, // Mock
+		"downloads": 1000,
 	}
 
 	writeJSON(w, http.StatusOK, stats)
@@ -917,12 +839,10 @@ func HandleDeleteResource(w http.ResponseWriter, r *http.Request) {
 	userID, _ := primitive.ObjectIDFromHex(r.Context().Value(userContextKey).(string))
 	resourceID, _ := primitive.ObjectIDFromHex(chi.URLParam(r, "id"))
 
-	// A função no store já contém a lógica para garantir que o usuário é o dono.
 	err := store.DeleteResourceByID(resourceID, userID)
 
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
-			// Isso acontece se o usuário tentar deletar um recurso que não é dele ou não existe.
 			writeJSON(w, http.StatusForbidden, map[string]string{"error": "Permission denied or resource not found"})
 			return
 		}

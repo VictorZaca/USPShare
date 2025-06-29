@@ -1,12 +1,11 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Container, Typography, Box, Grid, Button, CircularProgress, Alert, Stack, IconButton, Card, Paper } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
 import apiClient from '../api/axios';
-import { FileCard } from '../components/file-card'; // Reutilizando nosso card
+import { FileCard } from '../components/file-card'; 
 import FileUploadOutlinedIcon from '@mui/icons-material/FileUploadOutlined';
 import DeleteIcon from '@mui/icons-material/Delete';
 
-// A interface para os dados dos uploads
 interface UserUpload {
     id: string;
     title: string;
@@ -20,12 +19,9 @@ interface UserUpload {
     tags: string[];
     likes: number;
     comments: number;
-
     uploaderName?: string; 
     uploaderAvatar?: string; 
     professorAvatar?: string; 
-
-  // ... adicione outros campos que a FileCardMUI espera
 }
 
 
@@ -34,7 +30,6 @@ export default function MyUploadsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Função para buscar os dados, encapsulada em useCallback
   const fetchMyUploads = useCallback(async () => {
     try {
       setLoading(true);
@@ -52,16 +47,13 @@ export default function MyUploadsPage() {
     fetchMyUploads();
   }, [fetchMyUploads]);
 
-  // Função para deletar um material
   const handleDelete = async (resourceId: string) => {
-    // Pede confirmação ao usuário
     if (!window.confirm("Tem certeza que deseja excluir este material? Esta ação não pode ser desfeita.")) {
       return;
     }
 
     try {
       await apiClient.delete(`/api/resource/${resourceId}`);
-      // Atualiza a UI removendo o item deletado do estado, sem precisar de um novo fetch
       setMyUploads(prevUploads => prevUploads.filter(upload => upload.id !== resourceId));
     } catch (err) {
       console.error("Failed to delete resource:", err);
@@ -92,7 +84,6 @@ export default function MyUploadsPage() {
         {myUploads.map((file) => (
           <Grid size={{ xs: 12, sm: 6, md: 4}} key={file.id}>
             <Card sx={{ position: 'relative', height: '100%' }}>
-                {console.log(file)}
               <FileCard file={file} />
               <IconButton 
                 aria-label="delete" 

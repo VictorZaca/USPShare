@@ -15,11 +15,9 @@ import {
 } from "@mui/material";
 import { Link as RouterLink } from "react-router-dom";
 
-// Material-UI Icons
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import FiberManualRecordIcon from "@mui/icons-material/FiberManualRecord";
 
-// Helper component for creating bulleted list items
 const BulletListItem = ({ children }: { children: React.ReactNode }) => (
   <ListItem sx={{ py: 0.5, pl: 2 }}>
     <ListItemIcon sx={{ minWidth: 28, color: "text.secondary" }}>

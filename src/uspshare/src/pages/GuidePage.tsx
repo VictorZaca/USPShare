@@ -22,14 +22,11 @@ import {
 } from "@mui/material";
 import { Link as RouterLink } from "react-router-dom";
 
-// Material-UI Icons
 import InfoIcon from "@mui/icons-material/Info";
 import FileUploadIcon from "@mui/icons-material/FileUpload";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import BlockIcon from "@mui/icons-material/Block";
 
-
-// Helper component for Tab Panels, as recommended by MUI docs
 function TabPanel(props: { [x: string]: any; children: any; value: any; index: any; }) {
   const { children, value, index, ...other } = props;
 
@@ -50,7 +47,6 @@ function TabPanel(props: { [x: string]: any; children: any; value: any; index: a
   );
 }
 
-// Helper to generate accessibility props for tabs
 function a11yProps(index: string) {
   return {
     id: `guide-tab-${index}`,
@@ -58,15 +54,13 @@ function a11yProps(index: string) {
   };
 }
 
-// Main Component
 export default function GuidePage() {
   const [tabValue, setTabValue] = useState("getting-started");
 
-  const handleTabChange = (event: any, newValue: React.SetStateAction<string>) => {
+  const handleTabChange = (_event: any, newValue: React.SetStateAction<string>) => {
     setTabValue(newValue);
   };
   const PlaceholderImage = ({ src, alt, sx }: { src: string; alt: string; sx?: SxProps<Theme> }) => (
-  // Helper for creating placeholder images
     <Box
       component="img"
       src={src}
@@ -80,7 +74,6 @@ export default function GuidePage() {
     />
   );
   
-  // Helper for creating numbered list items with a custom icon
   const NumberedListItem = ({ number, title, description }: { number: number, title: string, description: string }) => (
     <Stack direction="row" spacing={2} alignItems="center">
       <Avatar sx={{ bgcolor: "primary.light", color: "primary.dark", width: 32, height: 32 }}>
@@ -108,7 +101,7 @@ export default function GuidePage() {
         <Alert
           severity="info"
           icon={<InfoIcon />}
-          sx={{ mt: 4, bgcolor: 'info.lightest' }} // Custom color similar to original
+          sx={{ mt: 4, bgcolor: 'info.lightest' }}
         >
           Este guia foi criado para ajudar novos usuários a entender como utilizar o USPShare. Se você tiver dúvidas
           adicionais, consulte nossa página de{" "}
@@ -135,7 +128,6 @@ export default function GuidePage() {
             </Tabs>
           </Box>
 
-          {/* Getting Started Panel */}
           <TabPanel value={tabValue} index="getting-started">
             <Stack spacing={6}>
               <Box component="section">
@@ -204,7 +196,6 @@ export default function GuidePage() {
             </Stack>
           </TabPanel>
 
-          {/* Uploading Panel */}
           <TabPanel value={tabValue} index="uploading">
             <Stack spacing={6}>
               <Box component="section">
@@ -224,7 +215,6 @@ export default function GuidePage() {
                  </Typography>
                  <Grid container spacing={4}>
                     <Grid size={{ xs: 12, md: 6 }}>
-                        {/* Steps would be here */}
                          <Typography color="text.secondary">
                             O processo é simples: acesse a página, selecione o arquivo, preencha os detalhes como título, disciplina e professor, adicione tags e envie!
                          </Typography>
@@ -276,7 +266,6 @@ export default function GuidePage() {
             </Stack>
           </TabPanel>
 
-          {/* Searching Panel */}
            <TabPanel value={tabValue} index="searching">
             <Stack spacing={6}>
               <Box component="section">
@@ -313,7 +302,6 @@ export default function GuidePage() {
             </Stack>
           </TabPanel>
 
-          {/* Interacting Panel */}
            <TabPanel value={tabValue} index="interacting">
              <Stack spacing={6}>
                 <Box component="section">
@@ -335,7 +323,6 @@ export default function GuidePage() {
              </Stack>
           </TabPanel>
 
-          {/* Profile Panel */}
            <TabPanel value={tabValue} index="profile">
              <Stack spacing={6}>
                 <Box component="section">

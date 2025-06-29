@@ -1,6 +1,6 @@
 // src/pages/ExplorePage.js
 
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import apiClient from '../api/axios'; // Importe o cliente
 import {
   Container,
@@ -24,34 +24,15 @@ import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
-  Paper,
   Stack,
-  List as MuiList,
-  ListItemText,
-  ListItemIcon,
-  ListItemButton,
   Avatar
 } from '@mui/material';
 import {
     Search as SearchIcon,
     Tune as TuneIcon,
     ExpandMore as ExpandMoreIcon,
-    Article as ArticleIcon,
-    ThumbUp as ThumbUpIcon
 } from '@mui/icons-material';
-import { Link as RouterLink } from 'react-router-dom';
 import { SubjectDetail } from '../components/subject-detail';
-
-
-
-// Componente para exibir os detalhes de uma disciplina e seus arquivos
-interface SubjectDetailProps {
-    subject: any;
-    selectedFileType: string;
-    activeFilters: string[];
-    sortBy: string;
-}
-
 
 export default function ExplorePage() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -59,11 +40,11 @@ export default function ExplorePage() {
   const [selectedFileType, setSelectedFileType] = useState("all");
   const [isFilterDrawerOpen, setFilterDrawerOpen] = useState(false);
   const [expandedSubject, setExpandedSubject] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState(0); // 0: Relevantes, 1: Recentes, 2: Populares
+  const [activeTab, setActiveTab] = useState(0); 
 
   const [allResources, setAllResources] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [_loading, setLoading] = useState(true);
+  const [_error, setError] = useState<string | null>(null);
 
   interface FilterOptions {
     tags: { _id: string; name: string }[];
@@ -107,13 +88,13 @@ export default function ExplorePage() {
 
 
   let sortedAndFilteredSubjects = [...filteredSubjects];
-  if (activeTab === 1) { // Recentes
+  if (activeTab === 1) { 
     sortedAndFilteredSubjects.sort((a, b) => {
         const latestA = Math.max(...a.files.map(f => new Date(f.uploadDate).getTime()));
         const latestB = Math.max(...b.files.map(f => new Date(f.uploadDate).getTime()));
         return latestB - latestA;
     });
-  } else if (activeTab === 2) { // Populares
+  } else if (activeTab === 2) { 
     sortedAndFilteredSubjects.sort((a, b) => {
         const likesA = a.files.reduce((sum, file) => sum + file.likes, 0);
         const likesB = b.files.reduce((sum, file) => sum + file.likes, 0);
@@ -158,7 +139,7 @@ export default function ExplorePage() {
     { value: '2013-1', label: '2013-1' },
   ]
 
-  const handleSubjectAccordionChange = (panel: string) => (event: any, isExpanded: boolean) => {
+  const handleSubjectAccordionChange = (panel: string) => (_event: any, isExpanded: boolean) => {
     setExpandedSubject(isExpanded ? panel : null);
   };
 
@@ -166,7 +147,6 @@ export default function ExplorePage() {
     const fetchInitialData = async () => {
         try {
             setLoading(true);
-            // Usamos Promise.all para fazer todas as chamadas de API em paralelo
             const [
               resourcesRes, 
               tagsRes, 
@@ -204,7 +184,6 @@ export default function ExplorePage() {
           Encontre provas, listas, resumos e outros materiais compartilhados pela comunidade USP
         </Typography>
 
-        {/* Barra de Busca e Filtros */}
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mt: 2 }}>
           <TextField
             fullWidth
@@ -241,7 +220,6 @@ export default function ExplorePage() {
           </Stack>
         </Stack>
 
-        {/* Filtros Ativos */}
         {activeFilters.length > 0 && (
           <Stack direction="row" spacing={1} flexWrap="wrap">
             {activeFilters.map((filter) => (
@@ -259,9 +237,8 @@ export default function ExplorePage() {
           </Stack>
         )}
 
-        {/* Abas de Conteúdo */}
         <Box sx={{ borderBottom: 1, borderColor: 'divider', mt: 2 }}>
-            <Tabs value={activeTab} onChange={(e, newValue) => setActiveTab(newValue)}>
+            <Tabs value={activeTab} onChange={(_e, newValue) => setActiveTab(newValue)}>
                 <Tab label="Mais Relevantes" />
                 <Tab label="Mais Recentes" />
                 <Tab label="Mais Populares" />
@@ -301,13 +278,11 @@ export default function ExplorePage() {
         </Box>
       </Stack>
 
-      {/* Drawer (Sheet) de Filtros */}
       <Drawer anchor="right" open={isFilterDrawerOpen} onClose={() => setFilterDrawerOpen(false)}>
         <Box sx={{ width: 300, p: 3 }} role="presentation">
           <Typography variant="h6" component="h2" gutterBottom>Filtros Avançados</Typography>
           
           <Stack spacing={4} sx={{mt: 4}}>
-            {/* Seção de Semestres */}
             <Box>
               <Typography variant="subtitle2" component="h3" fontWeight="bold">Semestre/Ano</Typography>
               <List dense>
@@ -322,7 +297,6 @@ export default function ExplorePage() {
               </List>
             </Box>
 
-            {/* Seção de Tags */}
             <Box>
               <Typography variant="subtitle2" component="h3" fontWeight="bold">Tags</Typography>
               <List dense>
@@ -337,7 +311,6 @@ export default function ExplorePage() {
               </List>
             </Box>
             
-            {/* Seção de Professores */}
             <Box>
               <Typography variant="subtitle2" component="h3" fontWeight="bold">Professores</Typography>
               <List dense>

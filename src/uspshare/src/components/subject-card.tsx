@@ -9,20 +9,17 @@ import {
   Box,
 } from "@mui/material";
 
-// Material-UI Icons
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
 import GroupOutlinedIcon from "@mui/icons-material/GroupOutlined";
 
 export function SubjectCard({ subject, isExpanded, onClick }: { subject: any; isExpanded: boolean; onClick: () => void; }) {
-  // Count unique file types
   const fileTypes = subject.files.reduce((types: { [x: string]: any; }, file: { type: string | number; }) => {
     types[file.type] = (types[file.type] || 0) + 1;
     return types;
   }, {});
 
-  // Count unique professors
   const professors = new Set(subject.files.map((file: { professor: any; }) => file.professor));
 
   return (
@@ -47,7 +44,6 @@ export function SubjectCard({ subject, isExpanded, onClick }: { subject: any; is
           }}
         >
           <Stack spacing={1.5} sx={{ flexGrow: 1, minWidth: 0 }}>
-            {/* Header: Course Name + Code Chip */}
             <Stack direction="row" spacing={1.5} alignItems="center">
               <Typography variant="h6" component="h3" noWrap>
                 {subject.course}
@@ -59,7 +55,6 @@ export function SubjectCard({ subject, isExpanded, onClick }: { subject: any; is
               />
             </Stack>
 
-            {/* Sub-header: Stats and Type Chips */}
             <Stack
               direction={{ xs: "column", sm: "row" }}
               alignItems={{ xs: "flex-start", sm: "center" }}
@@ -82,7 +77,6 @@ export function SubjectCard({ subject, isExpanded, onClick }: { subject: any; is
               </Stack>
             </Stack>
 
-            {/* File Type Chips */}
             <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
               {Object.entries(fileTypes).map(([type, count]) => (
                 <Chip
@@ -99,7 +93,6 @@ export function SubjectCard({ subject, isExpanded, onClick }: { subject: any; is
             </Stack>
           </Stack>
 
-          {/* Chevron Icon */}
           <Box sx={{ ml: 2, display: "flex", alignItems: "center" }}>
             {isExpanded ? (
               <ExpandMoreIcon color="primary" />

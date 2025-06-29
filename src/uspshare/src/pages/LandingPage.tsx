@@ -1,13 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Container, Typography, Box, Button, Grid, Stack } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
 import apiClient from '../api/axios';
 
-// Imports dos novos componentes
 import { StatsCounter } from '../components/stats-counter';
 import { FeatureCard } from '../components/feature-card';
 
-// Ícones
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import UploadIcon from '@mui/icons-material/Upload';
 import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined';
@@ -19,7 +17,6 @@ import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 import PeopleOutlineIcon from '@mui/icons-material/PeopleOutline';
 import ForumOutlinedIcon from '@mui/icons-material/ForumOutlined';
 import VerifiedUserOutlinedIcon from '@mui/icons-material/VerifiedUserOutlined';
-// ... importe outros ícones que você precisar para os cards
 
 interface Stats {
     resources: number;
@@ -72,7 +69,6 @@ export default function HomePage() {
 
   return (
     <Box>
-      {/* Hero Section */}
       <Box sx={{ bgcolor: 'action.hover', py: { xs: 8, md: 12 } }}>
         <Container>
           <Grid container spacing={6} alignItems="center">
@@ -101,7 +97,6 @@ export default function HomePage() {
         </Container>
       </Box>
 
-      {/* Stats Section */}
       <Box sx={{ py: 8 }}>
         <Container>
         <Grid container spacing={4}>
@@ -112,7 +107,6 @@ export default function HomePage() {
         </Container>
       </Box>
 
-      {/* Features Section */}
       <Box sx={{ bgcolor: 'action.hover', py: { xs: 8, md: 12 } }}>
         <Container>
           <Stack alignItems="center" textAlign="center" spacing={2}>
@@ -122,7 +116,6 @@ export default function HomePage() {
             </Typography>
           </Stack>
           
-          {/* Mapeamos o array 'features' para gerar os cards dinamicamente */}
           <Grid container spacing={4} sx={{ mt: 6 }}>
             {features.map((feature, index) => (
               <Grid size={{xs: 12, sm: 6, md: 4}} key={index}>
@@ -137,7 +130,6 @@ export default function HomePage() {
         </Container>
       </Box>
 
-      {/* CTA Section */}
       <Box sx={{ bgcolor: 'primary.main', color: 'primary.contrastText', py: { xs: 8, md: 12 } }}>
         <Container>
             <Stack alignItems="center" textAlign="center" spacing={3}>

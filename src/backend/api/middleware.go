@@ -12,7 +12,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-// Criamos um tipo customizado para a chave do contexto para evitar colisões
 type contextKey string
 
 const userContextKey = contextKey("userId")
@@ -51,10 +50,7 @@ func AuthMiddleware(next http.Handler) http.Handler {
 
 		userId := claims["userId"].(string)
 
-		// --- A MUDANÇA PRINCIPAL ---
-		// Adiciona o userId ao contexto da requisição
 		ctx := context.WithValue(r.Context(), userContextKey, userId)
-		// Passa a requisição para o próximo handler com o novo contexto
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

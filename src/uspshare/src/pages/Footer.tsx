@@ -1,6 +1,3 @@
-// src/components/Footer.js
-
-import React from 'react';
 import {
   Box,
   Container,
@@ -11,15 +8,13 @@ import {
   Divider,
   Stack
 } from '@mui/material';
-import { Link as RouterLink } from 'react-router-dom'; // Import do Link do React Router
+import { Link as RouterLink } from 'react-router-dom';
 
-// Ícones do Material-UI
 import MenuBookIcon from '@mui/icons-material/MenuBook';
 import TwitterIcon from '@mui/icons-material/Twitter';
 import InstagramIcon from '@mui/icons-material/Instagram';
 import GitHubIcon from '@mui/icons-material/GitHub';
 
-// Dados para os links para facilitar a manutenção
 const footerSections = [
   {
     title: 'Navegação',
@@ -45,7 +40,6 @@ const footerSections = [
       { label: 'Fale Conosco', path: '/contact' },
       { label: 'Reportar Problema', path: '/report' },
       { label: 'Enviar Feedback', path: '/feedback' },
-      // Link externo usa tag 'a' normal, então não precisa de 'path'
       { label: 'contato@uspshare.com.br', href: 'mailto:contato@uspshare.com.br' },
     ],
   },
@@ -63,7 +57,6 @@ export default function Footer() {
     >
       <Container sx={{ py: 6 }}>
         <Grid container spacing={5}>
-          {/* Coluna 1: Logo, Descrição e Redes Sociais */}
           <Grid size={{ xs: 12, md: 4, lg: 4 }}>
             <Stack spacing={2}>
               <MuiLink
@@ -82,7 +75,6 @@ export default function Footer() {
                 Uma plataforma colaborativa para compartilhamento de materiais acadêmicos entre estudantes da Universidade de São Paulo.
               </Typography>
               <Stack direction="row" spacing={1}>
-                {/* Links de redes sociais são externos, então usam a tag 'a' */}
                 <IconButton component="a" href="https://twitter.com" target="_blank" aria-label="Twitter" color="inherit">
                   <TwitterIcon />
                 </IconButton>
@@ -96,7 +88,6 @@ export default function Footer() {
             </Stack>
           </Grid>
 
-          {/* Colunas 2, 3 e 4: Links de Navegação */}
           {footerSections.map((section) => (
             <Grid size={{ xs: 12, sm: 4, md: 2.6, lg: 2.6}} key={section.title}>
               <Stack spacing={2}>
@@ -107,10 +98,9 @@ export default function Footer() {
                   {section.links.map((link) => (
                     <MuiLink
                       key={link.label}
-                      // Se o link tiver 'path', usa o RouterLink. Se tiver 'href', usa uma tag 'a'.
                       component={link.path ? RouterLink : 'a'}
-                      to={link.path}      // Para React Router
-                      href={link.href}    // Para links padrão <a>
+                      to={link.path}      
+                      href={link.href}    
                       variant="body2"
                       underline="hover"
                       color="text.secondary"

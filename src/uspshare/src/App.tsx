@@ -1,11 +1,10 @@
 
-import React, { useState, useMemo, createContext } from 'react';
+import { useState, useMemo, createContext } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import Box from '@mui/material/Box';
 
-// Import your pages
 import Menu from './pages/Menu';
 import LandingPage from './pages/LandingPage';
 import ExplorePage from './pages/ExplorePage';
@@ -20,27 +19,22 @@ import ProfilePage from './pages/ProfilePage';
 import ReportPage from './pages/ReportPage';
 import SignupPage from './pages/SignupPage';
 import TermsPage from './pages/TermsPage';
-import HomePage from './pages/HomePage';
 import UploadPage from './pages/UploadPage';
 import AboutPage from './pages/AboutPage';
 import Footer from './pages/Footer';
-// ... other page imports
-import {AuthProvider} from './context/AuthContext'; // Import your AuthProvider
+import {AuthProvider} from './context/AuthContext'; 
 import FilePage from './pages/FilePage';
 import AdminPage from './pages/AdminPage';
 import { AdminProtectedRoute } from './pages/AdminProtectedRoute';
 import { LikesProvider } from './context/LikesContext';
 import { CommentLikesProvider } from './context/CommentLikesContext';
-import ProtectedRoute from './pages/ProtectedRoute';
 import MyUploadsPage from './pages/MyUploadsPage';
 
-// 1. Create and export the context
 export const ColorModeContext = createContext({ toggleColorMode: () => {} });
 
 export default function App() {
   const [mode, setMode] = useState<"light" | "dark">('light');
 
-  // Memoize the context value to prevent unnecessary re-renders of consumers
   const colorMode = useMemo(
     () => ({
       toggleColorMode: () => {
@@ -56,7 +50,6 @@ export default function App() {
   );
 
   return (
-    // 2. Provide the context value to the component tree
     <AuthProvider>
       <LikesProvider>
         <CommentLikesProvider>
@@ -64,7 +57,6 @@ export default function App() {
             <ThemeProvider theme={theme}>
               <CssBaseline />
               <BrowserRouter>
-                {/* 3. The Menu component no longer needs props for theme switching */}
                 <Menu />
                 <Box component="main">
                   <Routes>
@@ -81,15 +73,11 @@ export default function App() {
                   <Route path="/report" element={<ReportPage />} />
                   <Route path="/signup" element={<SignupPage />} />
                   <Route path="/terms" element={<TermsPage />} />
-                  <Route path="/test" element={<HomePage />} />
                   <Route path="/upload" element={<UploadPage />} />
                   <Route path="/uploads" element={<MyUploadsPage />} />
                   <Route path="/about" element={<AboutPage />} />
-
                   <Route path="/file/:id" element={<FilePage />} />
-
                   <Route path="/admin" element={<AdminProtectedRoute><AdminPage /></AdminProtectedRoute>} />
-                  {/* Add other routes as needed */}
                   </Routes>
                 </Box>
                 <Footer />

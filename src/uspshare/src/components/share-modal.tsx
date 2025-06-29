@@ -30,19 +30,16 @@ export const ShareModal: FC<ShareModalProps> = ({ open, onClose, onShare }) => {
       setOptions(response.data || []);
     } catch (error) {
       console.error("Failed to search users:", error);
-      setOptions([]); // Limpa as opções em caso de erro
+      setOptions([]); 
     }
     setLoading(false);
   }, []);
 
   useEffect(() => {
-    // Se o modal não estiver aberto, não faz nada.
     if (!open) {
       return;
     }
 
-    // Se o termo de busca debounced está vazio, busca a lista inicial.
-    // Se não, busca pelo termo específico.
     searchUsers(debouncedSearchTerm);
     
   }, [debouncedSearchTerm, open, searchUsers]); 
@@ -62,7 +59,7 @@ export const ShareModal: FC<ShareModalProps> = ({ open, onClose, onShare }) => {
           options={options}
           loading={loading}
           getOptionLabel={(option) => option.name}
-          filterOptions={(x) => x} // Necessário para busca via API
+          filterOptions={(x) => x} 
           onInputChange={(event, newInputValue) => setInputValue(newInputValue)}
           onChange={(event, newValue) => setSelectedValue(newValue)}
           renderInput={(params) => (

@@ -58,12 +58,11 @@ type Resource struct {
 	FileUrl     string              `json:"fileUrl" bson:"fileUrl"`
 	UploadDate  time.Time           `json:"uploadDate" bson:"uploadDate"`
 	Likes       int                 `json:"likes" bson:"likes"`
-	// --- CAMPOS ADICIONADOS ---
-	Title       string   `json:"title" bson:"title"`
-	Description string   `json:"description" bson:"description"`
-	Semester    string   `json:"semester" bson:"semester"`
-	Tags        []string `json:"tags" bson:"tags"`
-	IsAnonymous bool     `json:"isAnonymous" bson:"isAnonymous"`
+	Title       string              `json:"title" bson:"title"`
+	Description string              `json:"description" bson:"description"`
+	Semester    string              `json:"semester" bson:"semester"`
+	Tags        []string            `json:"tags" bson:"tags"`
+	IsAnonymous bool                `json:"isAnonymous" bson:"isAnonymous"`
 }
 
 type Comment struct {

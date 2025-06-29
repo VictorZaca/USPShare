@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Box, Typography, TextField, FormControl, InputLabel, Select, MenuItem, FormControlLabel, Checkbox, Button, Stack } from '@mui/material';
 
 export default function ShareFormPage() {
-  const [file, setFile] = useState<File | null>(null);
+  const [_file, setFile] = useState<File | null>(null);
   return (
     <Box component="form" sx={{ '& .MuiFormControl-root': { mb: 2 } }}>
       <Typography variant="h4" gutterBottom>Compartilhar Recurso</Typography>

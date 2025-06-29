@@ -1,15 +1,12 @@
-import React, { useState, useEffect, FC } from 'react';
-import { Container, Typography, Box, Tabs, Tab, Paper, List, ListItem, ListItemText, IconButton, TextField, Button, Stack, CircularProgress, Alert, ListItemAvatar, Avatar } from '@mui/material';
+import { useState, useEffect, FC } from 'react';
+import { Container, Typography, Box, Tabs, Tab, Paper, List, ListItem, ListItemText, IconButton, TextField, Button, Stack, CircularProgress, ListItemAvatar, Avatar } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import apiClient from '../api/axios';
 
-// Interfaces para os dados
 interface Tag { id: string; name: string; }
 interface Course { id: string; code: string; name: string; }
 interface Professor { id: string; name: string; avatarUrl: string; }
 
-
-// Componente para a seção de Professores
 const ProfessorManagementSection: FC<{ items: Professor[]; onAdd: (name: string, avatar: File | null) => Promise<void>; onDelete: (id: string) => Promise<void>; }> = 
 ({ items, onAdd, onDelete }) => {
   const [name, setName] = useState("");
@@ -44,8 +41,6 @@ const ProfessorManagementSection: FC<{ items: Professor[]; onAdd: (name: string,
   );
 };
 
-
-// Componente genérico para gerenciar uma entidade
 const ManagementSection: FC<{
   title: string;
   items: any[];
@@ -84,13 +79,11 @@ const ManagementSection: FC<{
 
 export default function AdminPage() {
   const [tabValue, setTabValue] = useState(0);
-  // Estados para cada entidade
   const [tags, setTags] = useState<Tag[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
   const [professors, setProfessors] = useState<Professor[]>([]);
   const [loading, setLoading] = useState(true);
   
-  // Função para buscar todos os dados
   const fetchData = async () => {
     setLoading(true);
     const [tagsRes, coursesRes, profsRes] = await Promise.all([
@@ -107,19 +100,16 @@ export default function AdminPage() {
 
   useEffect(() => { fetchData(); }, []);
   
-  // Handlers genéricos para CRUD
   const handleDelete = (entity: string) => async (id: string) => {
     if (window.confirm(`Tem certeza que quer deletar este item?`)) {
       await apiClient.delete(`/api/admin/${entity}/${id}`);
-      fetchData(); // Atualiza a lista
+      fetchData(); 
     }
   };
   
   const handleAdd = (entity: string) => async (primary: string, secondary?: string) => {
-    // A lógica de POST para cada entidade seria um pouco diferente, especialmente para professores com foto
-    // Este é um exemplo simplificado para tags e matérias.
     await apiClient.post(`/api/admin/${entity}`, { name: primary, code: secondary });
-    fetchData(); // Atualiza a lista
+    fetchData();
   };
 
   const handleAddProfessor = async (name: string, avatar: File | null) => {

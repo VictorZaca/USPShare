@@ -15,11 +15,9 @@ import {
 } from "@mui/material";
 import { Link as RouterLink } from "react-router-dom";
 
-// Material-UI Icons
 import ShieldOutlinedIcon from "@mui/icons-material/ShieldOutlined";
 import FiberManualRecordIcon from "@mui/icons-material/FiberManualRecord";
 
-// Helper component for creating bulleted list items
 const BulletListItem = ({ children }: { children: React.ReactNode }) => (
   <ListItem sx={{ py: 0.5, pl: 2 }}>
     <ListItemIcon sx={{ minWidth: 28, color: "text.secondary" }}>
@@ -45,7 +43,7 @@ export default function PrivacyPage() {
         <Alert
           severity="info"
           icon={<ShieldOutlinedIcon />}
-          sx={{ mt: 4, bgcolor: "info.lightest" }} // Custom color for a softer look
+          sx={{ mt: 4, bgcolor: "info.lightest" }}
         >
           Esta Política de Privacidade descreve como coletamos, usamos e
           compartilhamos suas informações pessoais quando você utiliza o

@@ -1,13 +1,9 @@
 import React, { useState, useMemo, FC, SyntheticEvent } from 'react';
 import { Box, Typography, Grid, Paper, Tabs, Tab, Button, Stack } from '@mui/material';
 
-// --- ALTERAÇÃO: Importando os componentes necessários ---
-// 1. O card que exibe cada arquivo individualmente
 import { FileCard } from './file-card'; 
-// 2. O Link do React Router para navegação
 import { Link as RouterLink } from 'react-router-dom';
 
-// --- Interfaces (sem alterações) ---
 interface File {
   id: string;
   title: string;
@@ -35,14 +31,12 @@ interface SubjectDetailProps {
   sortBy?: "recent" | "popular" | "default";
 }
 
-// --- O Componente Principal ---
 export const SubjectDetail: FC<SubjectDetailProps> = ({
-  subject, // Agora recebe os dados reais via props
+  subject, 
   selectedFileType,
   activeFilters,
   sortBy = "default",
 }) => {
-  // Toda a sua lógica interna de estado e filtragem permanece a mesma.
   const [activeTab, setActiveTab] = useState<string>("all");
   const [showAll, setShowAll] = useState(false);
 
@@ -109,7 +103,6 @@ export const SubjectDetail: FC<SubjectDetailProps> = ({
           <Grid container spacing={2}>
             {displayedFiles.map((file) => (
               <Grid key={file.id} size={{ xs: 12, sm: 6, lg: 4 }}>
-                {/* O FileCard agora é um link para a página de detalhes do arquivo */}
                 <RouterLink to={`/file/${file.id}`} style={{ textDecoration: 'none' }}>
                   <FileCard file={{ ...file, tags: file.tags || [] }} />
                 </RouterLink>

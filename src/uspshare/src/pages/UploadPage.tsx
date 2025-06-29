@@ -19,7 +19,6 @@ import {
   Button,
   Stack,
   Alert,
-  AlertTitle,
   Link,
   Autocomplete,
   Chip,
@@ -32,15 +31,12 @@ import { LoadingButton } from "@mui/lab";
 import apiClient from "../api/axios";
 import useDebounce from "../hooks/useDebounce"
 
-// Material-UI Icons
-import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
-import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import ClearIcon from "@mui/icons-material/Clear";
 import InsertDriveFileOutlinedIcon from '@mui/icons-material/InsertDriveFileOutlined';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import { Navigate } from "react-router-dom";
 
-// --- A more advanced File Uploader Component ---
 interface FileDropzoneProps {
   onFileSelect: (file: File) => void;
   selectedFile: File | null;
@@ -129,8 +125,6 @@ const FileDropzone: React.FC<FileDropzoneProps> = ({ onFileSelect, selectedFile,
   );
 };
 
-
-// --- Main Upload Page Component ---
 export default function UploadPage() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -148,7 +142,7 @@ export default function UploadPage() {
   const [uploadedFileId, setUploadedFileId] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const [error, setError] = useState<string | null>(null); // Estado para erros
+  const [_error, setError] = useState<string | null>(null); 
 
   const [courseOptions, setCourseOptions] = useState<CourseOption[]>([]);
   const [professorOptions, setProfessorOptions] = useState<ProfessorOption[]>([]);
@@ -185,9 +179,8 @@ export default function UploadPage() {
 
   const handleSubmit = async (e: { preventDefault: () => void; }) => {
     e.preventDefault();
-    setError(null); // Limpa erros antigos
+    setError(null);
 
-    // Validação simples no frontend
     if (!file || !title || !fileType || !course || !courseCode) {
       setError("Os campos com * são obrigatórios.");
       return;
@@ -195,11 +188,8 @@ export default function UploadPage() {
 
     setIsLoading(true);
 
-    // 1. Criar um objeto FormData
     const formData = new FormData();
 
-    // 2. Adicionar o arquivo e todos os campos do formulário ao FormData
-    // Os nomes ("file", "title", etc.) devem bater com o que o backend espera
     formData.append("file", file);
     formData.append("title", title);
     formData.append("description", description);
@@ -208,18 +198,16 @@ export default function UploadPage() {
     formData.append("fileType", fileType);
     formData.append("semester", semester);
     formData.append("isAnonymous", isAnonymous.toString());
-    formData.append("tags", JSON.stringify(tags)); // Enviamos o array de tags como uma string JSON
+    formData.append("tags", JSON.stringify(tags)); 
 
     if (professor) {
       formData.append("professorId", professor.id);
     }
     try {
-      // 3. Enviar o FormData para o endpoint de upload protegido
-      // Axios vai configurar o 'Content-Type: multipart/form-data' automaticamente
       const response = await apiClient.post("/api/upload", formData);
       
       setUploadedFileId(response.data.id);
-      setIsSubmitted(true); // Mostra a tela de sucesso
+      setIsSubmitted(true);
     } 
     catch (err)
     {
@@ -285,7 +273,7 @@ export default function UploadPage() {
                   <Autocomplete
                     options={courseOptions}
                     getOptionLabel={(option) => `${option.code} - ${option.name}`}
-                    onChange={(event, newValue) => {
+                    onChange={(_event, newValue) => {
                       if (newValue) {
                         setCourse(newValue.name);
                         setCourseCode(newValue.code);
@@ -303,7 +291,7 @@ export default function UploadPage() {
                     freeSolo
                     options={professorOptions} 
                     getOptionLabel={(option) => typeof option === 'string' ? option : option.name} // Mostra o nome no campo
-                    onChange={(event, newValue) => {
+                    onChange={(_event, newValue) => {
                       setProfessor(newValue);
                     }}
                     renderOption={(props, option) => (
@@ -358,7 +346,7 @@ export default function UploadPage() {
                 value={tags}
 
                 getOptionLabel={(option) => typeof option === 'string' ? option : option.name} 
-                onChange={(event, newValue) => {
+                onChange={(_event, newValue) => {
                   const uniqueTags = [...new Set(newValue.map(tag => typeof tag === 'string' ? tag.trim() : tag.name.trim()).filter(Boolean))];                  
                   setTags(uniqueTags);
                 }}

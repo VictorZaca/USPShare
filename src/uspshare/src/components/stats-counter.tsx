@@ -15,7 +15,7 @@ export const StatsCounter: React.FC<StatsCounterProps> = ({ icon, value, label }
     const end = value;
     if (start === end) return;
 
-    const duration = 1500; // 1.5 segundos
+    const duration = 1500; 
     const incrementTime = Math.floor(duration / end);
 
     const timer = setInterval(() => {

@@ -1,14 +1,13 @@
 "use client"
 
 import { useParams, Link as RouterLink, useSearchParams } from "react-router-dom"
-import React, { SyntheticEvent, useEffect, useState } from "react"
+import React, { useEffect, useState } from "react"
 import {
   Box,
   Typography,
   Container,
   Grid,
   Paper,
-  IconButton,
   Chip,
   TextField,
   Button,
@@ -27,7 +26,6 @@ import {
 } from "@mui/material"
 import {
   ThumbUp as ThumbUpIcon,
-  FileOpen as FileOpenIcon,
   Download as DownloadIcon,
   Share as ShareIcon,
   InsertDriveFile as InsertDriveFileIcon,
@@ -38,7 +36,7 @@ import {
 } from "@mui/icons-material"
 import apiClient from "../api/axios"
 import { useAuth } from "../context/AuthContext"; 
-import { CommentThread } from '../components/CommentThread'; // Importe o novo componente
+import { CommentThread } from '../components/CommentThread'; 
 import { LoadingButton } from "@mui/lab"
 
 import { Document, Page, pdfjs } from 'react-pdf';
@@ -96,10 +94,8 @@ const FilePreviewer = ({ file, backendUrl }: FilePreviewerProps) => {
   const fileExtension = file.fileName.split('.').pop()?.toLowerCase() || '';
   const fileFullUrl = `${backendUrl}${file.fileUrl}`;
 
-  // --- Lógica para o Modal de Imagem ---
   const [imageOpen, setImageOpen] = useState(false);
   
-  // --- Lógica para o Visualizador de PDF ---
   const [numPages, setNumPages] = useState<number | null>(null);
   const [pageNumber, setPageNumber] = useState(1);
 
@@ -111,9 +107,6 @@ const FilePreviewer = ({ file, backendUrl }: FilePreviewerProps) => {
   const goToPrevPage = () => setPageNumber(prev => Math.max(prev - 1, 1));
   const goToNextPage = () => setPageNumber(prev => Math.min(prev + 1, numPages || 1));
 
-  // --- Renderização Condicional por Tipo de Arquivo ---
-
-  // 1. Para Imagens
   if (['jpg', 'jpeg', 'png', 'gif'].includes(fileExtension)) {
     return (
       <>
@@ -131,7 +124,6 @@ const FilePreviewer = ({ file, backendUrl }: FilePreviewerProps) => {
     );
   }
   
-  // 2. Para PDFs
   if (fileExtension === 'pdf') {
     return (
       <Paper variant="outlined" sx={{ height: 500, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
@@ -149,7 +141,6 @@ const FilePreviewer = ({ file, backendUrl }: FilePreviewerProps) => {
     );
   }
 
-  // 3. Para outros tipos de arquivo
   return (
     <Paper variant="outlined" sx={{ height: 300, display: "flex", alignItems: "center", justifyContent: "center", bgcolor: 'action.hover' }}>
       <Box textAlign="center">
@@ -207,7 +198,6 @@ export default function FilePage() {
     const fetchAllData = async () => {
       try {
         setLoading(true);
-        // Agora fazemos 3 chamadas em paralelo
         const [fileResponse, commentsResponse, relatedResponse] = await Promise.all([
           apiClient.get<FileData>(`/api/resource/${id}`),
           apiClient.get<CommentData[]>(`/api/resource/${id}/comments`),
@@ -226,11 +216,10 @@ export default function FilePage() {
     };
 
     fetchAllData();
-  }, [id]); // Roda sempre que o ID na URL mudar
+  }, [id]); 
 
   useEffect(() => {
     if (file) {
-        // --- LOG DE DEBUG 3 ---
         console.log("3. Estado 'file' foi atualizado. Nova contagem de likes:", file.likes);
     }
   }, [file]); 
@@ -238,7 +227,6 @@ export default function FilePage() {
   const handleLike = async () => {
     try {
       await toggleLike(id!);
-      // Após curtir, busca novamente os dados do arquivo para ter a contagem de likes atualizada
       const response = await apiClient.get<FileData>(`/api/resource/${id}`);
       setFile(response.data);
     } catch (error) { console.error("Failed to toggle like"); }
@@ -248,17 +236,13 @@ export default function FilePage() {
 
   const addReplyToTree = (nodes: CommentData[], parentId: string, newReply: CommentData): CommentData[] => {
     return nodes.map(node => {
-      // Caso base: encontrou o nó pai
       if (node.id === parentId) {
-        // Retorna uma cópia do nó com a nova resposta adicionada
         const updatedReplies = [...(node.replies || []), newReply];
         return { ...node, replies: updatedReplies };
       }
-      // Passo recursivo: se o nó tem respostas, procura nelas
       if (node.replies && node.replies.length > 0) {
         return { ...node, replies: addReplyToTree(node.replies, parentId, newReply) };
       }
-      // Se não é o nó e não tem filhos, retorna o nó como está
       return node;
     });
   };
@@ -269,23 +253,19 @@ export default function FilePage() {
     setIsPostingComment(true);
 
     try {
-      // 1. Envia o comentário e recebe de volta o objeto completo do novo comentário
       const response = await apiClient.post(`/api/resource/${id}/comments`, { content, parentId });
       const newComment = response.data;
 
-      // 2. Atualiza o estado local de forma "cirúrgica" e imutável
       if (parentId) {
-        // É uma resposta: usa a função recursiva para encontrar o pai e adicionar o filho
         setComments(prevComments => addReplyToTree(prevComments, parentId, newComment));
       } else {
-        // É um comentário principal: simplesmente adiciona no topo da lista
         setComments(prevComments => [newComment, ...prevComments]);
-        setComment(""); // Limpa o campo de texto principal
+        setComment(""); 
       }
 
     } catch (err) {
       console.error("Failed to post comment:", err);
-      setError("Não foi possível postar o comentário."); // Feedback para o usuário
+      setError("Não foi possível postar o comentário."); 
     } finally {
       setIsPostingComment(false);
     }
@@ -303,7 +283,6 @@ export default function FilePage() {
       url: window.location.href,
     };
 
-    // Verifica se o navegador suporta a API de compartilhamento nativo
     if (navigator.share) {
       try {
         await navigator.share(shareData);
@@ -312,7 +291,6 @@ export default function FilePage() {
         console.error("Erro no compartilhamento:", err);
       }
     } else {
-      // Se não suportar, usa nossa função de copiar o link como alternativa
       console.log("API de compartilhamento não suportada, copiando link.");
       copyLinkFallback();
     }
@@ -324,7 +302,7 @@ export default function FilePage() {
       setSnackbar({ open: true, message: "Material compartilhado com sucesso!" });
     } catch (error) {
       console.error("Failed to share with user:", error);
-      setSnackbar({ open: true, message: "Falha ao compartilhar." }); // Melhorar com um Alert de erro
+      setSnackbar({ open: true, message: "Falha ao compartilhar." }); 
     }
   };
 
@@ -351,11 +329,7 @@ export default function FilePage() {
   return (
     <Container sx={{ py: 8 }}>
       <Grid container spacing={6}>
-        {/* ======================================= */}
-        {/* Coluna Principal: Detalhes do Arquivo */}
-        {/* ======================================= */}
         <Grid size={{ xs: 12, md: 8 }}>
-          {/* Título e Tags dinâmicos */}
           <Typography variant="h4" gutterBottom>{file.title}</Typography>
           <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", mb: 2 }}>
             <Chip label={file.type} variant="outlined" />
@@ -364,12 +338,10 @@ export default function FilePage() {
             ))}
           </Box>
 
-          {/* Placeholder de Preview com botão funcional */}
           <Box sx={{ mt: 2 }}>
             <FilePreviewer file={file} backendUrl={backendUrl} />
           </Box>
 
-          {/* Botões de Ação */}
           <Box sx={{ display: "flex", gap: 2, mt: 2 }}>
             <Button variant="outlined" onClick={handleLike} startIcon={<ThumbUpIcon color={isLikedByUser ? "primary" : "action"} />}>
               Útil ({file.likes})
@@ -377,7 +349,7 @@ export default function FilePage() {
             <Button 
               component="a" 
               href={backendUrl + file.fileUrl} 
-              download={file.title} // Sugere o nome original do arquivo para download
+              download={file.title} 
               variant="outlined" 
               startIcon={<DownloadIcon />}
             >
@@ -402,7 +374,7 @@ export default function FilePage() {
 
             <Snackbar
               open={snackbarOpen}
-              autoHideDuration={3000} // Fecha após 3 segundos
+              autoHideDuration={3000} 
               onClose={() => setSnackbarOpen(false)}
               anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
             >
@@ -413,7 +385,6 @@ export default function FilePage() {
 
           </Box>
 
-          {/* Descrição dinâmica */}
           <Box mt={4}>
             <Typography variant="h6">Descrição</Typography>
             <Typography color="text.secondary" mt={1}>{file.description || "Sem descrição disponível."}</Typography>
@@ -421,7 +392,6 @@ export default function FilePage() {
 
           <Divider sx={{ my: 4 }} />
 
-          {/* Seção de Comentários (sua lógica original mantida) */}
           <Box>
             <Box display="flex" alignItems="center" justifyContent="space-between">
               <Typography variant="h6">Comentários</Typography>
@@ -431,7 +401,6 @@ export default function FilePage() {
             {isAuthenticated ? (
               <Box component="form" onSubmit={(e) => { 
                 e.preventDefault(); 
-                // Chamamos handleComment com 'null' para indicar que é um comentário principal
                 handleComment(comment, null); 
               }}  mt={2}>
                 <TextField fullWidth multiline minRows={3} value={comment} onChange={(e) => setComment(e.target.value)} placeholder="Adicione um comentário..." disabled={isPostingComment} />
@@ -449,7 +418,6 @@ export default function FilePage() {
 
             <Stack mt={3} spacing={2}>
               {comments.length > 0 ? (
-                // O componente CommentThread agora recebe a função handleComment atualizada
                 comments.map(c => <CommentThread key={c.id} comment={c} onReplySubmit={handleComment} highlightedId={highlightedCommentId} />)
               ) : (
                 <Typography color="text.secondary" sx={{ textAlign: 'center', p: 2 }}>Seja o primeiro a comentar!</Typography>
@@ -460,14 +428,10 @@ export default function FilePage() {
 
         </Grid>
 
-        {/* ======================================= */}
-        {/* Sidebar: Informações Adicionais       */}
-        {/* ======================================= */}
         <Grid size={{ xs: 12, md: 4}}>
           <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
             <Typography fontWeight="bold">Informações do Material</Typography>
             <Box mt={2} display="flex" flexDirection="column" gap={2}>
-              {/* Todos os campos preenchidos com dados do 'file' */}
               <Box display="flex" gap={1} alignItems="center">
                 <InsertDriveFileIcon fontSize="small" />
                 <Typography variant="body2">{file.course} ({file.courseCode})</Typography>
@@ -500,7 +464,6 @@ export default function FilePage() {
             </Box>
           </Paper>
 
-          {/* O restante da sua sidebar original, sem alterações */}
           <Alert severity="info">
             Encontrou algum problema com este material?{' '}
             <MuiLink component={RouterLink} to="/report" underline="hover">Reportar</MuiLink>
@@ -529,7 +492,6 @@ export default function FilePage() {
                         variant="rounded"
                         src={relatedFile.professorAvatar ? `${backendUrl}${relatedFile.professorAvatar}` : undefined}
                       >
-                        {/* Fallback para um ícone se não houver foto */}
                         <PersonIcon />
                       </Avatar>
                       <Box>

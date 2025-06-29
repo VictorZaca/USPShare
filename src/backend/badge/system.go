@@ -1,25 +1,21 @@
 package badge
 
-import "uspshare/models" // Certifique-se que o caminho do import está correto
+import "uspshare/models"
 
-// Badge define a estrutura de uma conquista
 type Badge struct {
 	ID          string
 	Name        string
 	Description string
-	// A regra é uma função que recebe as estatísticas do usuário e retorna 'true' se ele ganhou a badge
-	Rule func(stats models.UserStats) bool
+	Rule        func(stats models.UserStats) bool
 }
 
-// AllBadges é a nossa lista central de todas as conquistas possíveis na plataforma.
-// Para criar uma nova badge, basta adicioná-la aqui com uma nova regra.
 var AllBadges = []Badge{
 	{
 		ID:          "new_member",
 		Name:        "Novo Membro",
 		Description: "Criou uma conta e se juntou à comunidade.",
 		Rule: func(stats models.UserStats) bool {
-			return true // Todo mundo que tem um perfil é um novo membro
+			return true
 		},
 	},
 	{
@@ -46,12 +42,8 @@ var AllBadges = []Badge{
 			return stats.Comments >= 20
 		},
 	},
-	// Adicione mais badges aqui no futuro!
-	// Ex: { ID: "well_liked", Name: "Popular", Rule: func(stats) { return stats.Likes >= 100 } },
 }
 
-// EvaluateBadges recebe as estatísticas de um usuário e retorna um slice de strings
-// com os nomes das badges que ele conquistou.
 func EvaluateBadges(stats models.UserStats) []string {
 	var earnedBadges []string
 	for _, badge := range AllBadges {

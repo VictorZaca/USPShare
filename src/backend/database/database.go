@@ -37,13 +37,11 @@ func InitDB() {
 
 	MONGODB_URI := os.Getenv("MONGO_URI")
 
-	// Use a sua string de conexão do MongoDB
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(MONGODB_URI))
 	if err != nil {
 		log.Fatal("Erro ao conectar ao MongoDB:", err)
 	}
 
-	// Verifica se a conexão foi bem sucedida
 	if err := client.Ping(ctx, readpref.Primary()); err != nil {
 		log.Fatal("Não foi possível pingar o MongoDB:", err)
 	}
@@ -64,12 +62,10 @@ func InitDB() {
 	createIndexes()
 }
 
-// Criar índices é uma boa prática para performance e para garantir regras de negócio
 func createIndexes() {
-	// Garante que o campo 'email' na coleção 'users' seja único
 	indexModel := mongo.IndexModel{
 		Keys: bson.M{
-			"email": 1, // 1 para ordem ascendente
+			"email": 1,
 		},
 		Options: options.Index().SetUnique(true),
 	}

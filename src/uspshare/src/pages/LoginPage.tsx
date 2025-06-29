@@ -1,6 +1,4 @@
-// LoginPage.js - VERSÃO ATUALIZADA
-
-import React, { useState } from "react";
+import { useState } from "react";
 import { useNavigate, Link as RouterLink } from "react-router-dom";
 import {
   Container,
@@ -20,11 +18,8 @@ import {
 } from "@mui/material";
 import { LoadingButton } from "@mui/lab";
 
-// --- INÍCIO DAS ALTERAÇÕES ---
-import { useAuth } from "../context/AuthContext"; // 1. IMPORTAR O HOOK
-// --- FIM DAS ALTERAÇÕES ---
+import { useAuth } from "../context/AuthContext";
 
-// Material-UI Icons
 import MenuBookIcon from "@mui/icons-material/MenuBook";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 
@@ -36,13 +31,11 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
-  // --- INÍCIO DAS ALTERAÇÕES ---
-    const auth = useAuth(); // 2. OBTER O CONTEXTO DE AUTENTICAÇÃO
+    const auth = useAuth(); 
     if (!auth) {
       throw new Error("useAuth must be used within an AuthProvider");
     }
     const { login } = auth;
-  // --- FIM DAS ALTERAÇÕES ---
 
 
   const handleSubmit = async (e: { preventDefault: () => void; }) => {
@@ -51,13 +44,9 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      // --- INÍCIO DAS ALTERAÇÕES ---
-      // 3. USAR A FUNÇÃO DE LOGIN DO CONTEXTO EM VEZ DA SIMULAÇÃO
       await login(email, password);
-      navigate("/explore"); // Redireciona após login bem-sucedido
-      // --- FIM DAS ALTERAÇÕES ---
+      navigate("/explore");
     } catch (err) {
-      // O erro do contexto será capturado aqui
       if (err instanceof Error) {
         setError(err.message);
       } else {
@@ -68,8 +57,6 @@ export default function LoginPage() {
     }
   };
 
-  // O RESTANTE DO SEU COMPONENTE PERMANECE IGUAL, POIS JÁ ESTÁ PERFEITO.
-  // ... (todo o seu JSX abaixo)
   return (
     <Container
       component="main"
@@ -79,7 +66,7 @@ export default function LoginPage() {
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        minHeight: "calc(100vh - 64px)", // Adjust based on your header height
+        minHeight: "calc(100vh - 64px)", 
         py: 4,
       }}
     >

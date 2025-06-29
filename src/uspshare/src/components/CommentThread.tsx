@@ -38,15 +38,10 @@ export const CommentThread: FC<CommentThreadProps> = ({ comment, onReplySubmit, 
   const handleLikeClick = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    // A função de toggle continua igual, mas não precisamos mais usar sua resposta
-    // para atualizar um estado local, pois a atualização da árvore inteira cuidará disso.
     await toggleCommentLike(comment.id);
     setLikes(prevLikes => isLikedByUser ? prevLikes - 1 : prevLikes + 1); 
   };
 
-
-
-  // A lógica de destaque e scroll permanece a mesma, ela está correta.
   useEffect(() => {
     const isTargetComment = comment.id === highlightedId;
     if (isTargetComment) {
@@ -92,7 +87,6 @@ export const CommentThread: FC<CommentThreadProps> = ({ comment, onReplySubmit, 
             sx={{ width: 32, height: 32 }}
             src={comment.authorAvatar ? `${backendUrl}${comment.authorAvatar}` : undefined}
           >
-            {/* Fallback: mostra a primeira letra do nome se não houver imagem */}
             {comment.authorName.charAt(0)}
           </Avatar>
           <Box flexGrow={1}>
@@ -106,13 +100,11 @@ export const CommentThread: FC<CommentThreadProps> = ({ comment, onReplySubmit, 
 
         {isAuthenticated && (
           <Stack direction="row" spacing={2} alignItems="center" sx={{ mt: 1 }}>
-            {/* Botão de Like de Comentário */}
             <IconButton size="small" onClick={handleLikeClick} sx={{p:0.5}}>
                 {isLikedByUser ? <FavoriteIcon color="error" sx={{fontSize: 16}} /> : <FavoriteBorderIcon sx={{fontSize: 16}} />}
             </IconButton>
             <Typography variant="body2" color="text.secondary">{likes}</Typography>
             
-            {/* Botão de Resposta */}
           <Button size="small" onClick={() => setShowReply(!showReply)}>{showReply ? 'Cancelar' : 'Responder'}</Button>
           </Stack>
         )}
@@ -127,7 +119,6 @@ export const CommentThread: FC<CommentThreadProps> = ({ comment, onReplySubmit, 
         </Collapse>
       </Paper>
 
-      {/* A Lógica de Recursão - Verifique se está exatamente assim */}
       {comment.replies && comment.replies.length > 0 && (
         <Box sx={{ pt: 2, pl: { xs: 2, sm: 4 }, borderLeft: '1px solid', borderColor: 'divider' }}>
           <Stack spacing={2}>

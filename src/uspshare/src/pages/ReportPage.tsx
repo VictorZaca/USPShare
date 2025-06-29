@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Link as RouterLink } from "react-router-dom";
 import {
   Container,
@@ -25,13 +25,10 @@ import {
 } from "@mui/material";
 import { LoadingButton } from "@mui/lab";
 
-// Material-UI Icons
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import FlagOutlinedIcon from "@mui/icons-material/FlagOutlined";
 import LinkIcon from "@mui/icons-material/Link";
-import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
-import PersonOutlineIcon from '@mui/icons-material/PersonOutline';
 import ShieldOutlinedIcon from '@mui/icons-material/ShieldOutlined';
 
 export default function ReportPage() {

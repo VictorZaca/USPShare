@@ -1,8 +1,7 @@
 package api
 
-import "github.com/go-chi/chi/v5" // ou seu roteador preferido
+import "github.com/go-chi/chi/v5"
 
-// RegisterRoutes configura todas as rotas da aplicação
 func RegisterRoutes(r *chi.Mux) {
 	// Rotas Públicas
 	r.Get("/api/stats", HandleGetStats)
@@ -48,7 +47,6 @@ func RegisterRoutes(r *chi.Mux) {
 		r.Use(AuthMiddleware)
 		r.Use(AdminMiddleware) // Proteção dupla!
 
-		// Rotas para gerenciar Tags
 		r.Post("/api/admin/tags", HandleCreateTag)
 		r.Delete("/api/admin/tags/{id}", HandleDeleteTag)
 

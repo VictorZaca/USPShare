@@ -1,7 +1,5 @@
-// src/Navbar.js - VERSÃO ATUALIZADA (Mínimas Alterações)
-
 import React, { useState, useContext, useEffect } from "react";
-import { useLocation, Link as RouterLink, useNavigate } from "react-router-dom"; // Adicionado useNavigate
+import { useLocation, Link as RouterLink, useNavigate } from "react-router-dom"; 
 import {
   AppBar,
   Toolbar,
@@ -29,8 +27,6 @@ import {
 import { useAuth } from "../context/AuthContext";
 import apiClient from "../api/axios";
 
-
-// Seus imports de ícones...
 import MenuIcon from "@mui/icons-material/Menu";
 import MenuBookIcon from "@mui/icons-material/MenuBook";
 import ExploreOutlinedIcon from '@mui/icons-material/ExploreOutlined';
@@ -62,14 +58,12 @@ interface Notification {
 }
 
 export default function Navbar() {
-  // const [isLoggedIn, setIsLoggedIn] = useState(false);
   const auth = useAuth();
   if (!auth) {
     throw new Error("useAuth must be used within an AuthProvider");
   }
   const { isAuthenticated, user, logout } = auth;
   const navigate = useNavigate();
-  // --- FIM DA ALTERAÇÃO 2 ---
 
   const [isDrawerOpen, setDrawerOpen] = useState(false);
   const [isSearchOpen, setSearchOpen] = useState(false);
@@ -101,27 +95,23 @@ export default function Navbar() {
           console.error("Failed to fetch notifications:", error);
         }
       } else {
-        setNotifications([]); // Limpa as notificações ao fazer logout
+        setNotifications([]); 
       }
     };
 
     fetchNotifications();
-    // Você pode adicionar um polling aqui para buscar de tempos em tempos
-    const interval = setInterval(fetchNotifications, 60000); // Ex: a cada 60 segundos
+    const interval = setInterval(fetchNotifications, 60000); 
     return () => clearInterval(interval);
 
-  }, [isAuthenticated]); // Roda quando o status de login muda
+  }, [isAuthenticated]); 
 
-  // --- ALTERAÇÃO: Lógica para marcar notificação como lida ---
   const handleNotificationClick = async (notification: Notification) => {
     handleCloseNotificationsMenu();
     navigate(`/file/${notification.resourceId}?highlight=${notification.commentId}#${notification.commentId}`);
 
-    // Se a notificação ainda não foi lida, marca como lida
     if (!notification.isRead) {
       try {
         await apiClient.post(`/api/notifications/${notification.id}/read`);
-        // Atualiza o estado local para a UI responder instantaneamente
         setNotifications(prev =>
           prev.map(n =>
             n.id === notification.id ? { ...n, isRead: true } : n
@@ -133,10 +123,8 @@ export default function Navbar() {
     }
   };
 
-  // Calcula a contagem de notificações não lidas
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
-  // SEU ARRAY DE LINKS ORIGINAL, SEM MUDANÇAS
   const navLinks = [
     { text: "Explorar", href: "/explore", icon: <ExploreOutlinedIcon /> },
     { text: "Compartilhar", href: "/upload", icon: <FileUploadOutlinedIcon /> },
@@ -282,7 +270,6 @@ export default function Navbar() {
                     <MenuItem 
                       key={notification.id} 
                       onClick={() => handleNotificationClick(notification)}
-                      // Destaca notificações não lidas
                       sx={{ fontWeight: notification.isRead ? 'normal' : 'bold', bgcolor: notification.isRead ? 'transparent' : 'action.hover' }}
                     >
                       <ListItemText 
@@ -304,7 +291,6 @@ export default function Navbar() {
                 </Avatar>
               </IconButton>
 
-              {/* --- MENU DE USUÁRIO ATUALIZADO --- */}
               <Menu
                 anchorEl={anchorElUser}
                 open={Boolean(anchorElUser)}
@@ -313,7 +299,6 @@ export default function Navbar() {
                 anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
                 transformOrigin={{ vertical: 'top', horizontal: 'right' }}
               >
-                {/* Cabeçalho do Menu com Avatar e Info */}
                 <Box sx={{ px: 2, py: 1.5 }}>
                   <Stack direction="row" spacing={2} alignItems="center">
                     <Avatar src={user?.avatar ? `http://localhost:8080${user.avatar}` : ''} sx={{ width: 40, height: 40 }}>
@@ -327,7 +312,6 @@ export default function Navbar() {
                 </Box>
                 <Divider />
 
-                {/* Itens do Menu */}
                 <MenuItem component={RouterLink} to="/profile" onClick={handleCloseUserMenu}>
                     <ListItemIcon><AccountCircleOutlinedIcon fontSize="small"/></ListItemIcon>
                     <ListItemText>Meu Perfil</ListItemText>
@@ -356,7 +340,6 @@ export default function Navbar() {
           )}
         </Stack>
         
-        {/* SEU DRAWER CONTINUA IGUAL */}
         <Drawer anchor="left" open={isDrawerOpen} onClose={() => setDrawerOpen(false)}>
           <Box sx={{ width: 250 }} role="presentation">
             <Toolbar>

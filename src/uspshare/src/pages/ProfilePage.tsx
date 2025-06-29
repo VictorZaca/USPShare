@@ -15,7 +15,6 @@ import {
   Stack,
   Paper,
   CircularProgress,
-  Alert,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -23,7 +22,6 @@ import {
   DialogActions
 } from "@mui/material";
 
-// Ícones do Material-UI
 import EditIcon from "@mui/icons-material/Edit";
 import EmojiEventsOutlinedIcon from "@mui/icons-material/EmojiEventsOutlined";
 import FileUploadOutlinedIcon from "@mui/icons-material/FileUploadOutlined";
@@ -36,14 +34,10 @@ import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
 import StarBorderIcon from '@mui/icons-material/StarBorder';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 
-// Ferramentas para integração com a API e Auth
-import apiClient from "../api/axios"; // Nosso cliente de API configurado
-import { useAuth } from "../context/AuthContext"; // Nosso hook de autenticação
+import apiClient from "../api/axios"; 
+import { useAuth } from "../context/AuthContext"; 
 import { LoadingButton } from "@mui/lab";
 
-// --- Componentes de Apoio (Placeholders) ---
-
-// Componente para exibir um card de arquivo
 interface FileData {
   id: string;
   title?: string;
@@ -64,7 +58,6 @@ const FileCard: React.FC<FileCardProps> = ({ file }) => (
   </Card>
 );
 
-// Componente para a aba "Atividade"
 const ProfileActivity = () => (
   <Paper sx={{ p: 4, textAlign: 'center' }}>
     <HistoryIcon sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }} />
@@ -73,7 +66,6 @@ const ProfileActivity = () => (
   </Paper>
 );
 
-// Componente para a aba "Configurações"
 interface Profile {
   id: string;
   name: string;
@@ -102,7 +94,6 @@ const ProfileSettings = ({ user }: { user: Profile }) => (
   </Paper>
 );
 
-// Componente helper para os painéis das abas
 function TabPanel(props: { [x: string]: any; children: any; value: any; index: any; }) {
   const { children, value, index, ...other } = props;
   return (
@@ -125,7 +116,7 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({ open, onClose, prof
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    setFormData(profile); // Atualiza o form se o perfil mudar
+    setFormData(profile);
   }, [profile]);
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -173,25 +164,16 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({ open, onClose, prof
   );
 };
 
-
-// --- Componente Principal da Página de Perfil ---
-
 export default function ProfilePage() {
   const [tabValue, setTabValue] = useState("uploads");
   const [isEditModalOpen, setEditModalOpen] = useState(false);
 
-  // --- MUDANÇA PRINCIPAL: Usamos o 'user' e 'refreshUser' diretamente do contexto ---
-  // Renomeamos 'user' para 'profile' para manter a consistência do JSX.
   const { user: profile, refreshUser, loading: authLoading } = useAuth();
   
-  // O estado de 'uploads' continua local, pois pertence apenas a esta página.
   const [uploads, setUploads] = useState<FileData[]>([]);
-  const [loadingUploads, setLoadingUploads] = useState(true);
+  const [_loadingUploads, setLoadingUploads] = useState(true);
 
-  // --- MUDANÇA NO useEffect: Ele agora só busca os uploads ---
-  // A busca do perfil é gerenciada pelo AuthContext.
   useEffect(() => {
-    // Só busca os uploads se o perfil já foi carregado pelo contexto
     if (profile) {
       const fetchUserUploads = async () => {
         try {
@@ -208,13 +190,12 @@ export default function ProfilePage() {
     }
   }, [profile]); 
 
-  const handleTabChange = (event: any, newValue: React.SetStateAction<string>) => {
+  const handleTabChange = (_event: any, newValue: React.SetStateAction<string>) => {
     setTabValue(newValue);
   };
 
   const handleSaveProfile = async (updatedData: Partial<Profile>, avatarFile: File | null) => {
     try {
-      // 1. Envia as atualizações para o backend (texto e/ou imagem)
       await apiClient.put('/api/profile', updatedData);
       
       if (avatarFile) {
@@ -223,12 +204,10 @@ export default function ProfilePage() {
         await apiClient.post('/api/profile/avatar', formData);
       }
       
-      // 2. A MÁGICA: Pede ao AuthContext para buscar os dados mais recentes para TODA a aplicação.
       await refreshUser();
 
     } catch (error) {
       console.error("Failed to save profile:", error);
-      // Você pode adicionar um alerta de erro para o usuário aqui
     }
   };
 
@@ -244,7 +223,6 @@ export default function ProfilePage() {
     </Card>
   );
 
-  // Renderização condicional para os estados de loading e erro
   if (authLoading) {
     return <Container sx={{ py: 8, display: 'flex', justifyContent: 'center' }}><CircularProgress size={60} /></Container>;
   }
@@ -256,13 +234,11 @@ export default function ProfilePage() {
   const badgeIcons: Record<string, React.ReactElement> = {
     "Novo Membro": <StarBorderIcon fontSize="small" />,
     "Colaborador": <CloudUploadIcon fontSize="small" />,
-    "Mestre dos Uploads": <CloudUploadIcon fontSize="small" />, // poderia ser outro ícone
+    "Mestre dos Uploads": <CloudUploadIcon fontSize="small" />, 
   };
 
-  // Renderização principal com os dados reais
   return (
     <Container maxWidth="lg" sx={{ py: { xs: 4, md: 8 } }}>
-      {/* Cabeçalho do Perfil */}
       <Stack direction={{ xs: "column", md: "row" }} spacing={4} alignItems="flex-start">
         <Avatar src={`http://localhost:8080${profile.avatar}`} alt={profile.name} sx={{ width: 96, height: 96, border: '3px solid', borderColor: 'primary.light' }} />
         <Stack spacing={2} sx={{ flexGrow: 1 }}>
@@ -283,7 +259,6 @@ export default function ProfilePage() {
         </Stack>
       </Stack>
 
-      {/* Estatísticas do Usuário */}
       <Grid container spacing={2} sx={{ mt: 4 }}>
         <Grid size={{ xs: 6, sm: 3}}><StatCard icon={<FileUploadOutlinedIcon color="primary" />} value={profile.stats?.uploads ?? 0} label="Materiais Compartilhados" /></Grid>
         <Grid size={{ xs: 6, sm: 3}}><StatCard icon={<ThumbUpOutlinedIcon color="primary" />} value={profile.stats?.likes ?? 0} label="Curtidas Recebidas" /></Grid>
@@ -291,7 +266,6 @@ export default function ProfilePage() {
         <Grid size={{ xs: 6, sm: 3}}><StatCard icon={<EmojiEventsOutlinedIcon color="primary" />} value={profile.stats?.reputation?? 0} label="Pontos de Reputação" /></Grid>
       </Grid>
 
-      {/* Abas de Conteúdo do Perfil */}
       <Box sx={{ mt: 6 }}>
         <Tabs value={tabValue} onChange={handleTabChange} variant="scrollable" scrollButtons="auto">
           <Tab icon={<DescriptionOutlinedIcon />} iconPosition="start" label="Uploads" value="uploads" />

@@ -35,7 +35,6 @@ export default function AboutPage() {
           </Typography>
         </Box>
 
-        {/* Missão */}
         <Grid container spacing={4} alignItems="center" mb={6}>
           <Grid size={ { xs: 12, md: 6 } }>
             <Typography variant="h5" fontWeight="bold" gutterBottom>
@@ -61,7 +60,6 @@ export default function AboutPage() {
 
         <Divider sx={{ my: 6 }} />
 
-        {/* História */}
         <Box mb={6}>
           <Typography variant="h5" fontWeight="bold" gutterBottom>
             Nossa História
@@ -97,7 +95,6 @@ export default function AboutPage() {
 
         <Divider sx={{ my: 6 }} />
 
-        {/* Valores */}
         <Box mb={6}>
           <Typography variant="h5" fontWeight="bold" gutterBottom>
             Nossos Valores
@@ -136,7 +133,6 @@ export default function AboutPage() {
 
         <Divider sx={{ my: 6 }} />
 
-        {/* Recursos */}
         <Box mb={6}>
           <Typography variant="h5" fontWeight="bold" gutterBottom>
             Principais Recursos
@@ -183,7 +179,6 @@ export default function AboutPage() {
 
         <Divider sx={{ my: 6 }} />
 
-        {/* Equipe */}
         <Box mb={6}>
           <Typography variant="h5" fontWeight="bold" gutterBottom>
             Nossa Equipe
@@ -223,7 +218,6 @@ export default function AboutPage() {
 
         <Divider sx={{ my: 6 }} />
 
-        {/* Junte-se a nós */}
         <Box
           bgcolor="primary.main"
           color="primary.contrastText"

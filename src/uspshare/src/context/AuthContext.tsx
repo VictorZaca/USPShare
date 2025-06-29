@@ -1,8 +1,6 @@
-import React, { createContext, useState, useContext, useEffect, ReactNode, useCallback } from 'react';
+import { createContext, useState, useContext, useEffect, ReactNode, useCallback } from 'react';
 import apiClient from '../api/axios';
 
-// --- MELHORIA 1: Tipagem Forte para o Usuário ---
-// Esta interface deve corresponder aos dados que sua API retorna para um usuário
 interface User {
   id: string;
   name: string;
@@ -28,7 +26,7 @@ interface User {
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
-  loading: boolean; // Novo estado para sabermos quando a verificação inicial está acontecendo
+  loading: boolean; 
   login: (email: string, password: string) => Promise<User>;
   logout: () => void;
   refreshUser: () => Promise<void>; 
@@ -38,25 +36,23 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState<boolean>(true); // Começa como true
+  const [loading, setLoading] = useState<boolean>(true);
 
   const refreshUser = useCallback(async () => {
     try {
       const response = await apiClient.get<User>('/api/profile');
       const profileData = response.data;
       
-      // Lógica de cache-busting para o avatar
       if (profileData.avatar) {
         profileData.avatar = `${profileData.avatar}?v=${new Date().getTime()}`;
       } else {
-        // Fallback para o Pravatar se não houver avatar
         profileData.avatar = `https://i.pravatar.cc/150?u=${profileData.email}`;
       }
       
       setUser(profileData);
     } catch (error) {
       console.error("Falha ao atualizar dados do usuário, fazendo logout.", error);
-      logout(); // Se não conseguir buscar o perfil, o token é inválido
+      logout(); 
     }
   }, []);
 
@@ -66,7 +62,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const token = localStorage.getItem('token');
       if (token) {
         apiClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-        await refreshUser(); // Usa a nova função para buscar os dados iniciais
+        await refreshUser(); 
       }
       setLoading(false);
     };
@@ -75,26 +71,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const login = async (email: string, password: string): Promise<User> => {
     try {
-      // 1. Autentica e pega o token
       const response = await apiClient.post('/api/login', { email, password });
       const { token } = response.data;
 
-      // 2. Configura o token para todas as futuras requisições
       localStorage.setItem('token', token);
       apiClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       
-      // 3. AGORA, A MÁGICA: Em vez de usar os dados básicos da resposta do login,
-      // nós imediatamente chamamos refreshUser() para buscar os dados completos.
       await refreshUser();
       
-      // A função refreshUser já faz o setUser, então a Navbar e o resto do app
-      // serão atualizados com os dados completos, incluindo a avatarUrl.
-
-      // Retornamos os dados básicos apenas para a LoginPage, se ela precisar.
       return response.data.user;
 
     } catch (error) {
-      // Limpa qualquer token antigo se o login falhar
       localStorage.removeItem('token');
       delete apiClient.defaults.headers.common['Authorization'];
       
@@ -113,7 +100,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const value = {
     user,
     isAuthenticated: !!user,
-    loading, // Exporta o estado de loading
+    loading, 
     login,
     logout,
     refreshUser,
@@ -122,7 +109,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
-// Hook customizado para uso, agora com checagem de contexto
 export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
   if (context === undefined) {
