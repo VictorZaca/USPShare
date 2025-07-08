@@ -58,7 +58,7 @@ const features = [
   }
 ];
 
-export default function HomePage() {
+export default function LandingPage() {
   const [stats, setStats] = useState<Stats | null>(null);
 
   useEffect(() => {

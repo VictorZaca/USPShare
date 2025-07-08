@@ -15,7 +15,7 @@ import TwitterIcon from '@mui/icons-material/Twitter';
 import InstagramIcon from '@mui/icons-material/Instagram';
 import GitHubIcon from '@mui/icons-material/GitHub';
 
-const footerSections = [
+export const footerSections = [
   {
     title: 'Navegação',
     links: [
