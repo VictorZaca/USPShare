@@ -93,7 +93,7 @@ type CommentWithAuthor struct {
 	AuthorName   string               `json:"authorName" bson:"authorName"`
 	AuthorAvatar string               `json:"authorAvatar,omitempty" bson:"authorAvatar,omitempty"`
 	ParentID     *primitive.ObjectID  `json:"parentId,omitempty" bson:"parentId,omitempty"`
-	Replies      []*CommentWithAuthor `json:"replies,omitempty"` // Slice de ponteiros para si mesmo
+	Replies      []*CommentWithAuthor `json:"replies,omitempty"`
 	Likes        int                  `json:"likes" bson:"likes"`
 }
 

@@ -13,6 +13,7 @@ import * as IntentLauncher from 'expo-intent-launcher';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 
+import { API_URL } from '../../api/axios';
 
 // --- Interfaces de Tipos (essenciais para o TypeScript) ---
 interface FileData {
@@ -232,7 +233,6 @@ export default function FilePage() {
     return <View style={styles.centerContainer}><Text style={styles.errorText}>{error || "Material não encontrado."}</Text></View>;
   }
 
-  const backendUrl = 'http://192.168.15.14:8080'; 
 
   return (
     <ScrollView style={styles.container}>
@@ -246,7 +246,7 @@ export default function FilePage() {
         </View>
 
         <View style={styles.previewWrapper}>
-          <FilePreviewerMobile file={file} backendUrl={backendUrl} />
+          <FilePreviewerMobile file={file} backendUrl={API_URL} />
         </View>
 
         {/* Botões de Ação */}
@@ -282,7 +282,7 @@ export default function FilePage() {
               {/* Professor */}
               <View style={styles.infoRow}>
                 {file.professorAvatar ? (
-                  <Image source={{ uri: `${backendUrl}${file.professorAvatar}` }} style={styles.infoAvatar} />
+                  <Image source={{ uri: `${API_URL}${file.professorAvatar}` }} style={styles.infoAvatar} />
                 ) : (
                   <Ionicons name="person-circle-outline" size={20} color="#555" style={styles.infoIcon} />
                 )}
@@ -295,7 +295,7 @@ export default function FilePage() {
               </View>
               {/* Uploader */}
               <View style={styles.infoRow}>
-                <Image source={{ uri: file.uploaderAvatar ? `${backendUrl}${file.uploaderAvatar}`: undefined }} style={styles.infoAvatar} />
+                <Image source={{ uri: file.uploaderAvatar ? `${API_URL}${file.uploaderAvatar}`: undefined }} style={styles.infoAvatar} />
                 <Text style={styles.infoText}>{file.uploaderName || "Anônimo"}</Text>
               </View>
               {/* Data de Upload */}

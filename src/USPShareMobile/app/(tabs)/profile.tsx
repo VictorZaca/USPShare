@@ -4,7 +4,7 @@ import { Link, Stack as ExpoStack, useRouter, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 
-import apiClient from '../../api/axios';
+import apiClient, { API_URL } from '../../api/axios';
 import { useAuth } from '../../context/AuthContext';
 // Assumindo que você já tem o FileCardMobile criado
 import { FileCardMobile } from '../../components/FileCardMobile';
@@ -58,7 +58,7 @@ const EditProfileModal: FC<{
           <TouchableOpacity onPress={onClose}><Ionicons name="close" size={28} /></TouchableOpacity>
         </View>
         <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 24 }}>
-          <Image source={{ uri: avatarAsset ? avatarAsset.uri : `http://192.168.15.14:8080${profile.avatarUrl}` }} style={styles.modalAvatar} />
+          <Image source={{ uri: avatarAsset ? avatarAsset.uri : `${API_URL}${profile.avatarUrl}` }} style={styles.modalAvatar} />
           <TouchableOpacity style={styles.modalButtonOutline} onPress={pickImage}>
             <Text style={styles.modalButtonText}>Trocar Imagem</Text>
           </TouchableOpacity>
@@ -133,7 +133,7 @@ export default function ProfilePage() {
 
       {/* Cabeçalho do Perfil */}
       <View style={styles.profileHeader}>
-        <Image source={{ uri: `http://192.168.15.14:8080${profile.avatarUrl}` }} style={styles.profileAvatar} />
+        <Image source={{ uri: `${API_URL}${profile.avatarUrl}` }} style={styles.profileAvatar} />
         <View style={{ flex: 1 }}>
           <Text style={styles.profileName}>{profile.name}</Text>
           <Text style={styles.profileInfo}>{profile.course || 'Curso não informado'}</Text>

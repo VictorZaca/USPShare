@@ -47,6 +47,7 @@ export default function LoginPage() {
         <TextInput
           style={styles.input}
           placeholder="seu.email@usp.br"
+          placeholderTextColor="#808080"
           value={email}
           onChangeText={setEmail}
           keyboardType="email-address"
@@ -58,6 +59,7 @@ export default function LoginPage() {
         <TextInput
           style={styles.input}
           placeholder="********"
+          placeholderTextColor="#808080"
           value={password}
           onChangeText={setPassword}
           secureTextEntry
@@ -151,6 +153,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: 4,
     backgroundColor: '#fff',
+    color: '#000',
   },
   actionsRow: {
     flexDirection: 'row',

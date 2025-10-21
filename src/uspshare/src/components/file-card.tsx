@@ -115,7 +115,8 @@ export function FileCard({ file }: FileCardProps) {
             <Typography variant="body2">{file.semester}</Typography>
           </Stack>
         </Stack>
-
+        
+        {file.tags ? 
         <Stack direction="row" spacing={1} flexWrap="wrap" sx={{ mt: 2 }}>
           {file.tags.slice(0, 3).map((tag) => (
             <Chip key={tag} label={tag} size="small" />
@@ -123,7 +124,7 @@ export function FileCard({ file }: FileCardProps) {
           {file.tags.length > 3 && (
             <Chip label={`+${file.tags.length - 3}`} size="small" />
           )}
-        </Stack>
+        </Stack> : null}
       </CardContent>
 
       <Divider />

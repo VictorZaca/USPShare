@@ -4,7 +4,7 @@ import { Stack as ExpoStack, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
 
-const backendUrl = "http://192.168.15.14:8080"; 
+import { API_URL } from '../../api/axios';
 import { Dropdown, MultiSelect } from 'react-native-element-dropdown';
 
 import apiClient from '../../api/axios';
@@ -53,7 +53,7 @@ const renderProfessorItem = (item: ProfessorOption) => {
   return (
     <View style={styles.dropdownItemContainer}>
       <Image 
-        source={{ uri: item.avatarUrl ? `${backendUrl}${item.avatarUrl}` : undefined }}
+        source={{ uri: item.avatarUrl ? `${API_URL}${item.avatarUrl}` : undefined }}
         style={styles.dropdownItemImage}
       />
       <Text style={styles.dropdownItemText}>{item.name}</Text>

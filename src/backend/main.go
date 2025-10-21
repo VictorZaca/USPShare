@@ -18,7 +18,7 @@ func main() {
 
 	r.Use(middleware.Logger)
 	r.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   []string{"http://localhost:5173"},
+		AllowedOrigins:   []string{"*"},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
 		ExposedHeaders:   []string{"Link"},
@@ -28,12 +28,17 @@ func main() {
 
 	fileServer := http.FileServer(http.Dir("./uploads/"))
 
-	forceDownloadHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Disposition", "attachment")
+	smartFileHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		viewParam := r.URL.Query().Get("view")
+
+		if viewParam != "true" {
+			w.Header().Set("Content-Disposition", "attachment")
+		}
+
 		fileServer.ServeHTTP(w, r)
 	})
 
-	r.Handle("/uploads/*", http.StripPrefix("/uploads/", forceDownloadHandler))
+	r.Handle("/uploads/*", http.StripPrefix("/uploads/", smartFileHandler))
 
 	api.RegisterRoutes(r)
 

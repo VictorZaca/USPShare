@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, Image,
 import { Stack as ExpoStack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import apiClient from '../../api/axios';
+import apiClient, { API_URL } from '../../api/axios';
 import { useFocusEffect } from 'expo-router';
 
 // --- Interfaces de Tipos ---
@@ -185,7 +185,7 @@ export default function AdminPage() {
               <Text style={styles.sectionTitle}>Professores Existentes</Text>
               {professors.map(prof => (
                 <View key={prof.id} style={styles.listItem}>
-                  <Image source={{uri: prof.avatarUrl ? `http://192.168.15.14:8080${prof.avatarUrl}` : undefined}} style={styles.avatar} />
+                  <Image source={{uri: prof.avatarUrl ? `${API_URL}${prof.avatarUrl}` : undefined}} style={styles.avatar} />
                   <Text style={styles.listItemText}>{prof.name}</Text>
                   <TouchableOpacity onPress={() => handleDelete('professors', prof.id)}>
                     <Ionicons name="trash-bin-outline" size={22} color="#d32f2f" />

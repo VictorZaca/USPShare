@@ -308,6 +308,7 @@ export default function UploadPage() {
                      <FormControl fullWidth required>
                         <InputLabel id="semester-label">Semestre/Ano</InputLabel>
                         <Select labelId="semester-label" value={semester} label="Semestre/Ano" onChange={(e) => setSemester(e.target.value)}>
+                            <MenuItem value="2025-2">2025/2</MenuItem>
                             <MenuItem value="2025-1">2025/1</MenuItem>
                             <MenuItem value="2024-2">2024/2</MenuItem>
                             <MenuItem value="2024-1">2024/1</MenuItem>
