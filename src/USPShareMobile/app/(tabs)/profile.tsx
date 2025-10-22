@@ -5,25 +5,41 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 
 import apiClient, { API_URL } from '../../api/axios';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth, User } from '../../context/AuthContext';
 // Assumindo que você já tem o FileCardMobile criado
 import { FileCardMobile } from '../../components/FileCardMobile';
 
 // --- Interfaces de Tipos ---
 // (Reutilizadas da versão web)
-interface FileData { id: string; title?: string; fileName?: string; courseCode: string; type: string; }
-interface ProfileData { name: string; avatarUrl?: string; course?: string; faculty?: string; yearJoined?: string; bio?: string; badges?: string[]; stats?: any; }
+interface FileData {
+  id: string;
+  title: string;
+  type: string;
+  courseCode: string;
+  semester: string;
+  likes: number;
+  comments: number;
+  fileName?: string;
+  professorName?: string;
+  uploaderName?: string;
+  tags?: string[];
+}
 
 // --- Modal de Edição para Mobile ---
 const EditProfileModal: FC<{
   visible: boolean;
   onClose: () => void;
-  profile: ProfileData;
-  onSave: (data: Partial<ProfileData>, file: ImagePicker.ImagePickerAsset | null) => Promise<void>;
+  profile: User;
+  onSave: (data: Partial<User>, file: ImagePicker.ImagePickerAsset | null) => Promise<void>;
 }> = ({ visible, onClose, profile, onSave }) => {
   const [formData, setFormData] = useState(profile);
   const [avatarAsset, setAvatarAsset] = useState<ImagePicker.ImagePickerAsset | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => { setFormData(profile); }, [profile]);
+  const handleChange = (field: keyof Omit<User, 'id'|'email'|'initial'|'role'|'avatarUrl'|'badges'|'stats'>, value: string) => {
+    setFormData(prev => ({ ...(prev!), [field]: value }));
+  };
 
   const pickImage = async () => {
     // Pede permissão para acessar a galeria
@@ -58,14 +74,14 @@ const EditProfileModal: FC<{
           <TouchableOpacity onPress={onClose}><Ionicons name="close" size={28} /></TouchableOpacity>
         </View>
         <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 24 }}>
-          <Image source={{ uri: avatarAsset ? avatarAsset.uri : `${API_URL}${profile.avatarUrl}` }} style={styles.modalAvatar} />
+          <Image source={{ uri: avatarAsset ? avatarAsset.uri : `${API_URL}${profile.avatar}` }} style={styles.modalAvatar} />
           <TouchableOpacity style={styles.modalButtonOutline} onPress={pickImage}>
             <Text style={styles.modalButtonText}>Trocar Imagem</Text>
           </TouchableOpacity>
         </View>
-        <TextInput style={styles.modalInput} value={formData.name} onChangeText={(text) => setFormData(p => ({...p, name: text}))} placeholder="Nome Completo" />
-        <TextInput style={styles.modalInput} value={formData.course} onChangeText={(text) => setFormData(p => ({...p, course: text}))} placeholder="Curso" />
-        <TextInput style={styles.modalInput} multiline value={formData.bio} onChangeText={(text) => setFormData(p => ({...p, bio: text}))} placeholder="Bio" />
+        <TextInput style={styles.modalInput} value={formData.name} onChangeText={(text) => handleChange('name', text)} placeholder="Nome Completo" />
+        <TextInput style={styles.modalInput} value={formData.course} onChangeText={(text) => handleChange('course', text)} placeholder="Curso" />
+        <TextInput style={styles.modalInput} multiline value={formData.bio} onChangeText={(text) => handleChange('bio', text)} placeholder="Bio" />
         
         <TouchableOpacity style={styles.modalButton} onPress={handleSaveChanges} disabled={isSaving}>
           {isSaving ? <ActivityIndicator color="#fff" /> : <Text style={styles.modalButtonTextSolid}>Salvar Alterações</Text>}
@@ -103,7 +119,7 @@ export default function ProfilePage() {
     }
   }, [profile]);
   
-  const handleSaveProfile = async (updatedData: Partial<ProfileData>, avatarAsset: ImagePicker.ImagePickerAsset | null) => {
+  const handleSaveProfile = async (updatedData: Partial<User>, avatarAsset: ImagePicker.ImagePickerAsset | null) => {
     try {
       await apiClient.put('/api/profile', updatedData);
       if (avatarAsset) {
@@ -133,7 +149,7 @@ export default function ProfilePage() {
 
       {/* Cabeçalho do Perfil */}
       <View style={styles.profileHeader}>
-        <Image source={{ uri: `${API_URL}${profile.avatarUrl}` }} style={styles.profileAvatar} />
+        <Image source={{ uri: `${API_URL}${profile.avatar}` }} style={styles.profileAvatar} />
         <View style={{ flex: 1 }}>
           <Text style={styles.profileName}>{profile.name}</Text>
           <Text style={styles.profileInfo}>{profile.course || 'Curso não informado'}</Text>
@@ -150,18 +166,9 @@ export default function ProfilePage() {
         <Text style={styles.sectionTitle}>Meus Materiais</Text>
         
         {loadingUploads ? (
-          // 1. Enquanto estiver carregando, exibe o spinner
           <ActivityIndicator size="large" color="#1976d2" style={{ marginVertical: 40 }} />
         ) : uploads.length > 0 ? (
-          uploads.map(file => <FileCardMobile key={file.id} file={{
-            id: file.id,
-            title: file.title || file.fileName || '',
-            type: file.type,
-            courseCode: file.courseCode,
-            semester: "",
-            likes: 0,
-            comments: 0
-          }} />)
+          uploads.map(file => <FileCardMobile key={file.id} file={file} />)
         ) : (
           <Text style={styles.emptyText}>Você ainda não compartilhou materiais.</Text>
         )}
@@ -199,7 +206,7 @@ const styles = StyleSheet.create({
   modalAvatar: { width: 80, height: 80, borderRadius: 40 },
   modalInput: { height: 48, borderColor: '#ccc', borderWidth: 1, marginBottom: 16, paddingHorizontal: 12, borderRadius: 8 },
   modalButton: { backgroundColor: '#1976d2', padding: 16, borderRadius: 8, alignItems: 'center', marginTop: 16 },
-  modalButtonOutline: { padding: 12, borderRadius: 8, borderWidth: 1, borderColor: '#1976d2' },
+  modalButtonOutline: { padding: 12, borderRadius: 8, borderWidth: 1, borderColor: '#1976d2', marginLeft: 16 },
   modalButtonText: { color: '#1976d2', fontWeight: '600' },
   modalButtonTextSolid: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
 });

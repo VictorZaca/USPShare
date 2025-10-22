@@ -2,7 +2,7 @@ import { createContext, useState, useContext, useEffect, ReactNode, useCallback 
 import apiClient from '../api/axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-interface User {
+export interface User {
   id: string;
   name: string;
   email: string;

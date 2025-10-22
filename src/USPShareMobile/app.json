@@ -7,18 +7,22 @@
     "icon": "./assets/images/icon.png",
     "scheme": "uspsharemobile",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
+    "newArchEnabled": true, 
+    "splash": {
+      "image": "./assets/images/splash.png", 
+      "resizeMode": "contain",               
+      "backgroundColor": "#f5f5f5"          
+    },
     "ios": {
       "supportsTablet": true
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "foregroundImage": "./assets/images/icon.png", 
+        "backgroundColor": "#f5f5f5"
       },
-      "edgeToEdgeEnabled": true,
       "package": "com.enzospi.USPShareMobile",
-      "usesCleartextTraffic": true
+      "usesCleartextTraffic": true 
     },
     "web": {
       "bundler": "metro",
@@ -27,15 +31,7 @@
     },
     "plugins": [
       "expo-router",
-      [
-        "expo-splash-screen",
-        {
-          "image": "./assets/images/splash-icon.png",
-          "imageWidth": 200,
-          "resizeMode": "contain",
-          "backgroundColor": "#ffffff"
-        }
-      ]
+      "expo-splash-screen"
     ],
     "experiments": {
       "typedRoutes": true
