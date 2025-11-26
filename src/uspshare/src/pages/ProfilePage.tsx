@@ -34,7 +34,7 @@ import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
 import StarBorderIcon from '@mui/icons-material/StarBorder';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 
-import apiClient from "../api/axios"; 
+import apiClient, { backendUrl } from "../api/axios"; 
 import { useAuth } from "../context/AuthContext"; 
 import { LoadingButton } from "@mui/lab";
 
@@ -142,7 +142,7 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({ open, onClose, prof
       <DialogContent>
         <Stack spacing={3} sx={{ pt: 1 }}>
           <Stack direction="row" spacing={2} alignItems="center">
-            <Avatar src={avatarFile ? URL.createObjectURL(avatarFile) : `http://localhost:8080${profile.avatar}`} sx={{ width: 80, height: 80 }} />
+            <Avatar src={avatarFile ? URL.createObjectURL(avatarFile) : `${backendUrl}${profile.avatar}`} sx={{ width: 80, height: 80 }} />
             <Button variant="outlined" component="label">
               Trocar Imagem
               <input type="file" hidden accept="image/*" onChange={handleAvatarChange} />
@@ -240,7 +240,7 @@ export default function ProfilePage() {
   return (
     <Container maxWidth="lg" sx={{ py: { xs: 4, md: 8 } }}>
       <Stack direction={{ xs: "column", md: "row" }} spacing={4} alignItems="flex-start">
-        <Avatar src={`http://localhost:8080${profile.avatar}`} alt={profile.name} sx={{ width: 96, height: 96, border: '3px solid', borderColor: 'primary.light' }} />
+        <Avatar src={`${backendUrl}${profile.avatar}`} alt={profile.name} sx={{ width: 96, height: 96, border: '3px solid', borderColor: 'primary.light' }} />
         <Stack spacing={2} sx={{ flexGrow: 1 }}>
           <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" alignItems="center" spacing={2}>
             <Typography variant="h4" fontWeight="bold">{profile.name}</Typography>

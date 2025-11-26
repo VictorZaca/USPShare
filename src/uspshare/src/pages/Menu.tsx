@@ -25,7 +25,7 @@ import {
 } from "@mui/material";
 
 import { useAuth } from "../context/AuthContext";
-import apiClient from "../api/axios";
+import apiClient, { backendUrl } from "../api/axios";
 
 import MenuIcon from "@mui/icons-material/Menu";
 import MenuBookIcon from "@mui/icons-material/MenuBook";
@@ -286,7 +286,7 @@ export default function Navbar() {
               </Menu>
 
               <IconButton onClick={handleOpenUserMenu}>
-                 <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main' }} src={user?.avatar ? `http://localhost:8080${user.avatar}` : ''}>
+                 <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main' }} src={user?.avatar ? `${backendUrl}${user.avatar}` : ''}>
                   {user?.initial}
                 </Avatar>
               </IconButton>
@@ -301,7 +301,7 @@ export default function Navbar() {
               >
                 <Box sx={{ px: 2, py: 1.5 }}>
                   <Stack direction="row" spacing={2} alignItems="center">
-                    <Avatar src={user?.avatar ? `http://localhost:8080${user.avatar}` : ''} sx={{ width: 40, height: 40 }}>
+                    <Avatar src={user?.avatar ? `${backendUrl}${user.avatar}` : ''} sx={{ width: 40, height: 40 }}>
                       {user?.initial}
                     </Avatar>
                     <Box>

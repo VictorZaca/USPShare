@@ -1,7 +1,9 @@
 import axios from 'axios';
 
+export const backendUrl = 'http://143.107.45.126:7655';
+
 const apiClient = axios.create({
-  baseURL: 'http://localhost:8080', 
+  baseURL: backendUrl, 
 });
 
 apiClient.interceptors.request.use(

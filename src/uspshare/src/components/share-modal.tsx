@@ -1,6 +1,6 @@
 import React, { useState, useEffect, FC, useCallback } from 'react';
 import { Dialog, DialogTitle, DialogContent, Autocomplete, TextField, DialogActions, Button, Stack, Avatar, Box, Typography, CircularProgress } from '@mui/material';
-import apiClient from '../api/axios';
+import apiClient, { backendUrl } from '../api/axios';
 import useDebounce from '../hooks/useDebounce'; // Reutilizando nosso hook!
 
 interface UserOption {
@@ -79,7 +79,7 @@ export const ShareModal: FC<ShareModalProps> = ({ open, onClose, onShare }) => {
           )}
           renderOption={(props, option) => (
             <Box component="li" {...props}>
-              <Avatar src={`http://localhost:8080${option.avatarUrl}`} sx={{ mr: 2 }} />
+              <Avatar src={`${backendUrl}${option.avatarUrl}`} sx={{ mr: 2 }} />
               <Box>
                 <Typography variant="body1">{option.name}</Typography>
                 <Typography variant="body2" color="text.secondary">{option.email}</Typography>

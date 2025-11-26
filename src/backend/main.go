@@ -42,8 +42,8 @@ func main() {
 
 	api.RegisterRoutes(r)
 
-	log.Println("Servidor iniciado na porta :8080")
-	if err := http.ListenAndServe(":8080", r); err != nil {
+	log.Println("Servidor iniciado na porta 7655")
+	if err := http.ListenAndServe(":7655", r); err != nil {
 		log.Fatalf("Não foi possível iniciar o servidor: %v", err)
 	}
 }

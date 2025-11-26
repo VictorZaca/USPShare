@@ -20,6 +20,7 @@ import ThumbUpOutlinedIcon from '@mui/icons-material/ThumbUpOutlined';
 import ChatBubbleOutlineOutlinedIcon from '@mui/icons-material/ChatBubbleOutlineOutlined';
 
 import { useLikes } from '../context/LikesContext';
+import { backendUrl } from '../api/axios';
 
 interface FileCardProps {
   file: {
@@ -105,7 +106,7 @@ export function FileCard({ file }: FileCardProps) {
             <Typography variant="body2">{file.course} ({file.courseCode})</Typography>
           </Stack>
           <Stack direction="row" alignItems="center" spacing={1}>
-            <Avatar sx={{ width: 24, height: 24, fontSize: '0.75rem' }} src={'http://localhost:8080' + file.professorAvatar}>
+            <Avatar sx={{ width: 24, height: 24, fontSize: '0.75rem' }} src={backendUrl + file.professorAvatar}>
               {file.professorAvatar ? '' : 'A'}
             </Avatar>
             <Typography variant="body2">{file.professorName || 'Não informado'}</Typography>
@@ -144,7 +145,7 @@ export function FileCard({ file }: FileCardProps) {
         </Stack>
 
         <Stack direction="row" alignItems="center" spacing={1} color="text.secondary">
-          <Avatar sx={{ width: 24, height: 24, fontSize: '0.75rem' }} src={'http://localhost:8080' + file.uploaderAvatar}>
+          <Avatar sx={{ width: 24, height: 24, fontSize: '0.75rem' }} src={backendUrl + file.uploaderAvatar}>
             {file.uploaderAvatar ? '' : 'A'}
           </Avatar>
           <Typography variant="body2">{file.uploaderName || 'Anônimo'}</Typography>

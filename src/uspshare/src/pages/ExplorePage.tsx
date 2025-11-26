@@ -1,7 +1,7 @@
 // src/pages/ExplorePage.js
 
 import { useEffect, useState } from 'react';
-import apiClient from '../api/axios'; // Importe o cliente
+import apiClient, { backendUrl } from '../api/axios'; // Importe o cliente
 import {
   Container,
   Typography,
@@ -316,7 +316,7 @@ export default function ExplorePage() {
               <List dense>
                 {filterOptions.professors.map(option => (
                   <ListItem key={option._id} disablePadding>
-                    <Avatar src={`http://localhost:8080`+option.avatarUrl} alt={option.name} sx={{ width: 24, height: 24, mr: 1 }} />
+                    <Avatar src={backendUrl+option.avatarUrl} alt={option.name} sx={{ width: 24, height: 24, mr: 1 }} />
                     <FormControlLabel
                       control={<Checkbox checked={activeFilters.includes(option.name)} onChange={() => toggleFilter(option.name)} />}
                       label={option.name}

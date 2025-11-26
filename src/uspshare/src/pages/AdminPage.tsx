@@ -1,7 +1,7 @@
 import { useState, useEffect, FC } from 'react';
 import { Container, Typography, Box, Tabs, Tab, Paper, List, ListItem, ListItemText, IconButton, TextField, Button, Stack, CircularProgress, ListItemAvatar, Avatar } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
-import apiClient from '../api/axios';
+import apiClient, { backendUrl } from '../api/axios';
 
 interface Tag { id: string; name: string; }
 interface Course { id: string; code: string; name: string; }
@@ -32,7 +32,7 @@ const ProfessorManagementSection: FC<{ items: Professor[]; onAdd: (name: string,
       <List>
         {items.map(prof => (
           <ListItem key={prof.id} secondaryAction={<IconButton edge="end" onClick={() => onDelete(prof.id)}><DeleteIcon /></IconButton>}>
-            <ListItemAvatar><Avatar src={`http://localhost:8080${prof.avatarUrl}`} /></ListItemAvatar>
+            <ListItemAvatar><Avatar src={`${backendUrl}${prof.avatarUrl}`} /></ListItemAvatar>
             <ListItemText primary={prof.name} />
           </ListItem>
         ))}

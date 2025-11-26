@@ -34,7 +34,7 @@ import {
   ChatBubbleOutline as CommentIcon,
   PersonAdd as PersonAddIcon,
 } from "@mui/icons-material"
-import apiClient from "../api/axios"
+import apiClient, {backendUrl} from "../api/axios"
 import { useAuth } from "../context/AuthContext"; 
 import { CommentThread } from '../components/CommentThread'; 
 import { LoadingButton } from "@mui/lab"
@@ -313,8 +313,6 @@ export default function FilePage() {
   if (error || !file) {
     return <Container sx={{ py: 8 }}><Alert severity="error">{error || "Material não encontrado."}</Alert></Container>;
   }
-
-  const backendUrl = 'http://localhost:8080';
 
   const handleShareClick = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);

@@ -4,6 +4,7 @@ import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import { useAuth } from '../context/AuthContext';
 import { useCommentLikes } from '../context/CommentLikesContext';
+import { backendUrl } from '../api/axios';
 
 // A interface permanece a mesma, ela está correta.
 interface Comment {
@@ -69,8 +70,6 @@ export const CommentThread: FC<CommentThreadProps> = ({ comment, onReplySubmit, 
     setReplyContent("");
     setShowReply(false);
   };
-
-  const backendUrl = 'http://localhost:8080'
 
   return (
     <Box ref={commentRef} id={comment.id}>

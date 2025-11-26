@@ -28,7 +28,7 @@ import {
 } from "@mui/material";
 import { LoadingButton } from "@mui/lab";
 
-import apiClient from "../api/axios";
+import apiClient, { backendUrl } from "../api/axios";
 import useDebounce from "../hooks/useDebounce"
 
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
@@ -296,7 +296,7 @@ export default function UploadPage() {
                     }}
                     renderOption={(props, option) => (
                         <Box component="li" sx={{ '& > img': { mr: 2, flexShrink: 0 } }} {...props}>
-                            <Avatar src={`http://localhost:8080${option.avatarUrl}`} sx={{ mr: 1.5, width: 24, height: 24 }} />
+                            <Avatar src={`${backendUrl}${option.avatarUrl}`} sx={{ mr: 1.5, width: 24, height: 24 }} />
                             {option.name}
                         </Box>
                     )}
